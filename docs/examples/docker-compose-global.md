@@ -4,7 +4,70 @@ Attaching RouteWarden directly to Traefik's entrypoint provides unified, cluster
 
 ---
 
-## Docker Compose Configuration
+## Configuration Preview
+
+::: code-group
+
+```yaml [File (YAML)]
+# traefik.yml (Static EntryPoint Attachment)
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      middlewares:
+        - global-warden@file
+
+# dynamic_conf.yml (Middleware Definition)
+http:
+  middlewares:
+    global-warden:
+      plugin:
+        routewarden:
+          enabled: true
+          enableDefaultPatterns: true
+          allowedIps:
+            - "127.0.0.1"
+            - "10.0.0.0/8"
+          response:
+            mode: json
+            statusCode: 403
+            body: '{"error":"Forbidden","scope":"global-shield"}'
+```
+
+```toml [File (TOML)]
+# traefik.toml (Static EntryPoint Attachment)
+[entryPoints.web]
+  address = ":80"
+
+[entryPoints.web.http]
+  middlewares = ["global-warden@file"]
+
+# dynamic_conf.toml (Middleware Definition)
+[http.middlewares.global-warden.plugin.routewarden]
+  enabled = true
+  enableDefaultPatterns = true
+  allowedIps = ["127.0.0.1", "10.0.0.0/8"]
+
+[http.middlewares.global-warden.plugin.routewarden.response]
+  mode = "json"
+  statusCode = 403
+  body = '{"error":"Forbidden","scope":"global-shield"}'
+```
+
+```bash [CLI]
+# CLI / Traefik Arguments
+traefik \
+  --entrypoints.web.address=:80 \
+  --entrypoints.web.http.middlewares=global-warden@docker \
+  --experimental.plugins.routewarden.modulename=github.com/aman400/routewarden \
+  --experimental.plugins.routewarden.version={{version}}
+```
+
+:::
+
+---
+
+## Docker Compose Example
 
 ```yaml
 services:

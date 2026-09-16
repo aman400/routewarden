@@ -26,7 +26,77 @@ plugins-local/
 
 ---
 
-## 2. Local Docker Compose Setup
+## 2. Local Traefik Configuration Preview
+
+::: code-group
+
+```yaml [File (YAML)]
+# traefik.yml (Static)
+experimental:
+  localPlugins:
+    routewarden:
+      moduleName: github.com/aman400/routewarden
+
+# dynamic_conf.yml (Dynamic Middleware & Router)
+http:
+  middlewares:
+    local-warden:
+      plugin:
+        routewarden:
+          enabled: true
+          enableDefaultPatterns: true
+          response:
+            mode: json
+            statusCode: 403
+            body: '{"error":"Forbidden","environment":"local-dev"}'
+
+  routers:
+    app-router:
+      rule: "Host(`localhost`)"
+      entryPoints:
+        - web
+      middlewares:
+        - local-warden
+      service: app-service
+```
+
+```toml [File (TOML)]
+# traefik.toml (Static)
+[experimental.localPlugins.routewarden]
+  moduleName = "github.com/aman400/routewarden"
+
+# dynamic_conf.toml (Dynamic Middleware & Router)
+[http.routers.app-router]
+  rule = "Host(`localhost`)"
+  entryPoints = ["web"]
+  middlewares = ["local-warden"]
+  service = "app-service"
+
+[http.middlewares.local-warden.plugin.routewarden]
+  enabled = true
+  enableDefaultPatterns = true
+
+[http.middlewares.local-warden.plugin.routewarden.response]
+  mode = "json"
+  statusCode = 403
+  body = '{"error":"Forbidden","environment":"local-dev"}'
+```
+
+```bash [CLI]
+# Traefik CLI flags
+traefik \
+  --api.insecure=true \
+  --providers.docker=true \
+  --entrypoints.web.address=:80 \
+  --experimental.localplugins.routewarden.modulename=github.com/aman400/routewarden \
+  --log.level=DEBUG
+```
+
+:::
+
+---
+
+## 3. Local Docker Compose Setup
 
 Here is a complete, ready-to-run `docker-compose.yml` for developing and testing RouteWarden locally:
 
@@ -66,12 +136,12 @@ services:
       - "traefik.http.middlewares.local-warden.plugin.routewarden.enableDefaultPatterns=true"
       - "traefik.http.middlewares.local-warden.plugin.routewarden.response.mode=json"
       - "traefik.http.middlewares.local-warden.plugin.routewarden.response.statusCode=403"
-      - "traefik.http.middlewares.local-warden.plugin.routewarden.response.body={\"status\":403,\"message\":\"Blocked by local RouteWarden plugin\"}"
+      - "traefik.http.middlewares.local-warden.plugin.routewarden.response.body={\"error\":\"Forbidden\",\"environment\":\"local-dev\"}"
 ```
 
 ---
 
-## 3. Step-by-Step Local Walkthrough
+## 4. Step-by-Step Local Walkthrough
 
 ### Step 1: Start the Cluster
 From the root of the RouteWarden repository:

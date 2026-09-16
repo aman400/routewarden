@@ -15,7 +15,77 @@ Both exact IPv4/IPv6 addresses (`127.0.0.1`, `2001:db8::1`) and CIDR blocks (`10
 
 ---
 
-## Docker Compose Configuration
+## Configuration Preview
+
+::: code-group
+
+```yaml [File (YAML)]
+# dynamic_conf.yml
+http:
+  middlewares:
+    admin-shield:
+      plugin:
+        routewarden:
+          enabled: true
+          pathPatterns:
+            - '(?i)^/admin(/.*)?$'
+            - '(?i)^/metrics(/.*)?$'
+          allowedIps:
+            - "10.0.0.0/8"
+            - "192.168.1.100"
+          response:
+            mode: json
+            statusCode: 403
+            body: '{"error":"Forbidden","message":"Restricted to authorized IP/VPN"}'
+
+  routers:
+    admin-router:
+      rule: "Host(`admin.localhost`)"
+      entryPoints:
+        - web
+      middlewares:
+        - admin-shield
+      service: admin-service
+```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.admin-router]
+  rule = "Host(`admin.localhost`)"
+  entryPoints = ["web"]
+  middlewares = ["admin-shield"]
+  service = "admin-service"
+
+[http.middlewares.admin-shield.plugin.routewarden]
+  enabled = true
+  pathPatterns = ["(?i)^/admin(/.*)?$", "(?i)^/metrics(/.*)?$"]
+  allowedIps = ["10.0.0.0/8", "192.168.1.100"]
+
+[http.middlewares.admin-shield.plugin.routewarden.response]
+  mode = "json"
+  statusCode = 403
+  body = '{"error":"Forbidden","message":"Restricted to authorized IP/VPN"}'
+```
+
+```bash [CLI]
+# Docker Compose Labels / CLI equivalent
+- "traefik.enable=true"
+- "traefik.http.routers.admin.rule=Host(`admin.localhost`)"
+- "traefik.http.routers.admin.entrypoints=web"
+- "traefik.http.routers.admin.middlewares=admin-shield"
+- "traefik.http.middlewares.admin-shield.plugin.routewarden.enabled=true"
+- "traefik.http.middlewares.admin-shield.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/metrics(/.*)?$"
+- "traefik.http.middlewares.admin-shield.plugin.routewarden.allowedIps=10.0.0.0/8,192.168.1.100"
+- "traefik.http.middlewares.admin-shield.plugin.routewarden.response.mode=json"
+- "traefik.http.middlewares.admin-shield.plugin.routewarden.response.statusCode=403"
+- 'traefik.http.middlewares.admin-shield.plugin.routewarden.response.body={"error":"Forbidden","message":"Restricted to authorized IP/VPN"}'
+```
+
+:::
+
+---
+
+## Docker Compose Example
 
 ```yaml
 services:

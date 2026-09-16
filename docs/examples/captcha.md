@@ -31,47 +31,146 @@ Instead of dropping connections or returning static error codes, RouteWarden can
 
 This example protects `/admin` and `/login` with **hCaptcha** (using the official hCaptcha test site key `10000000-ffff-ffff-ffff-000000000001`):
 
-```yaml
-services:
-  app:
-    image: nginx:alpine
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`app.example.com`)"
-      - "traefik.http.routers.app.middlewares=hcaptcha-barrier"
+::: code-group
 
-      # RouteWarden hCaptcha Middleware
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.enabled=true"
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.pathPatterns=(?i)^/(admin|login)(/.*)?$"
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.mode=captcha"
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.statusCode=403"
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha.provider=hcaptcha"
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha.siteKey=10000000-ffff-ffff-ffff-000000000001" # hCaptcha Test Key
-      - "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha.title=Human Verification (hCaptcha)"
+```yaml [File (YAML)]
+# dynamic_conf.yml
+http:
+  middlewares:
+    hcaptcha-barrier:
+      plugin:
+        routewarden:
+          enabled: true
+          pathPatterns:
+            - '(?i)^/(admin|login)(/.*)?$'
+          response:
+            mode: captcha
+            statusCode: 403
+            captcha:
+              provider: "hcaptcha"
+              siteKey: "10000000-ffff-ffff-ffff-000000000001"
+              title: "Human Verification (hCaptcha)"
+
+  routers:
+    app-router:
+      rule: "Host(`app.example.com`)"
+      entryPoints:
+        - web
+      middlewares:
+        - hcaptcha-barrier
+      service: app-service
 ```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.app-router]
+  rule = "Host(`app.example.com`)"
+  entryPoints = ["web"]
+  middlewares = ["hcaptcha-barrier"]
+  service = "app-service"
+
+[http.middlewares.hcaptcha-barrier.plugin.routewarden]
+  enabled = true
+  pathPatterns = ["(?i)^/(admin|login)(/.*)?$"]
+
+[http.middlewares.hcaptcha-barrier.plugin.routewarden.response]
+  mode = "captcha"
+  statusCode = 403
+
+[http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha]
+  provider = "hcaptcha"
+  siteKey = "10000000-ffff-ffff-ffff-000000000001"
+  title = "Human Verification (hCaptcha)"
+```
+
+```bash [CLI]
+# Docker Compose Labels / CLI equivalent
+- "traefik.enable=true"
+- "traefik.http.routers.app.rule=Host(`app.example.com`)"
+- "traefik.http.routers.app.middlewares=hcaptcha-barrier"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.enabled=true"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.pathPatterns=(?i)^/(admin|login)(/.*)?$"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.mode=captcha"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.statusCode=403"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha.provider=hcaptcha"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha.siteKey=10000000-ffff-ffff-ffff-000000000001"
+- "traefik.http.middlewares.hcaptcha-barrier.plugin.routewarden.response.captcha.title=Human Verification (hCaptcha)"
+```
+
+:::
 
 ---
 
 ## 2. Cloudflare Turnstile Configuration Example
 
-```yaml
-services:
-  login-portal:
-    image: nginx:alpine
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.login.rule=Host(`login.example.com`)"
-      - "traefik.http.routers.login.middlewares=turnstile-barrier"
+::: code-group
 
-      # RouteWarden Turnstile Middleware
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.enabled=true"
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.pathPatterns=(?i)^/login(/.*)?$,(?i)^/reset-password(/.*)?$"
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.mode=captcha"
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.statusCode=403"
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha.provider=turnstile"
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha.siteKey=1x00000000000000000000AA" # Turnstile Test Key
-      - "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha.title=Security Verification Required"
+```yaml [File (YAML)]
+# dynamic_conf.yml
+http:
+  middlewares:
+    turnstile-barrier:
+      plugin:
+        routewarden:
+          enabled: true
+          pathPatterns:
+            - '(?i)^/login(/.*)?$'
+            - '(?i)^/reset-password(/.*)?$'
+          response:
+            mode: captcha
+            statusCode: 403
+            captcha:
+              provider: "turnstile"
+              siteKey: "1x00000000000000000000AA"
+              title: "Security Verification Required"
+
+  routers:
+    login-router:
+      rule: "Host(`login.example.com`)"
+      entryPoints:
+        - web
+      middlewares:
+        - turnstile-barrier
+      service: login-service
 ```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.login-router]
+  rule = "Host(`login.example.com`)"
+  entryPoints = ["web"]
+  middlewares = ["turnstile-barrier"]
+  service = "login-service"
+
+[http.middlewares.turnstile-barrier.plugin.routewarden]
+  enabled = true
+  pathPatterns = ["(?i)^/login(/.*)?$", "(?i)^/reset-password(/.*)?$"]
+
+[http.middlewares.turnstile-barrier.plugin.routewarden.response]
+  mode = "captcha"
+  statusCode = 403
+
+[http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha]
+  provider = "turnstile"
+  siteKey = "1x00000000000000000000AA"
+  title = "Security Verification Required"
+```
+
+```bash [CLI]
+# Docker Compose Labels / CLI equivalent
+- "traefik.enable=true"
+- "traefik.http.routers.login.rule=Host(`login.example.com`)"
+- "traefik.http.routers.login.middlewares=turnstile-barrier"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.enabled=true"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.pathPatterns=(?i)^/login(/.*)?$,(?i)^/reset-password(/.*)?$"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.mode=captcha"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.statusCode=403"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha.provider=turnstile"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha.siteKey=1x00000000000000000000AA"
+- "traefik.http.middlewares.turnstile-barrier.plugin.routewarden.response.captcha.title=Security Verification Required"
+```
+
+:::
 
 ---
 
