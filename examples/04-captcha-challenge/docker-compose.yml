@@ -1,0 +1,52 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+      - "--experimental.plugins.routewarden.version=v0.2.0"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  # Service protected with hCaptcha
+  hcaptcha-service:
+    image: nginx:alpine
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hcaptcha.rule=Host(`hcaptcha.localhost`)"
+      - "traefik.http.routers.hcaptcha.entrypoints=web"
+      - "traefik.http.routers.hcaptcha.middlewares=hcaptcha-gate"
+
+      # RouteWarden hCaptcha Middleware Configuration
+      # NOTE: No external captcha.html file needed! RouteWarden generates a built-in dark template.
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.enabled=true"
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.pathPatterns=(?i)^/(admin|login)(/.*)?$"
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.response.mode=captcha"
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.response.statusCode=403"
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.response.captcha.provider=hcaptcha"
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.response.captcha.siteKey=10000000-ffff-ffff-ffff-000000000001" # Official hCaptcha Test SiteKey
+      - "traefik.http.middlewares.hcaptcha-gate.plugin.routewarden.response.captcha.title=hCaptcha Bot Protection"
+
+  # Service protected with Cloudflare Turnstile
+  turnstile-service:
+    image: nginx:alpine
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.turnstile.rule=Host(`turnstile.localhost`)"
+      - "traefik.http.routers.turnstile.entrypoints=web"
+      - "traefik.http.routers.turnstile.middlewares=turnstile-gate"
+
+      # RouteWarden Turnstile Middleware Configuration
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.enabled=true"
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.pathPatterns=(?i)^/portal(/.*)?$"
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.response.mode=captcha"
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.response.statusCode=403"
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.response.captcha.provider=turnstile"
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.response.captcha.siteKey=1x00000000000000000000AA" # Cloudflare Testing SiteKey
+      - "traefik.http.middlewares.turnstile-gate.plugin.routewarden.response.captcha.title=Cloudflare Turnstile Verification"
