@@ -1,0 +1,15 @@
+{
+  "current": "v0.2.1",
+  "versions": [
+    {
+      "text": "v0.2.1 (Latest)",
+      "link": "/guide/getting-started",
+      "tag": "v0.2.1"
+    },
+    {
+      "text": "v0.1.0",
+      "link": "/v0.1/guide/getting-started",
+      "tag": "v0.1.0"
+    }
+  ]
+}

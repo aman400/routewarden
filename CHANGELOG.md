@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.2.1] - 2026-09-16
+
+### Added
+- **Interactive Documentation & Wiki Site (VitePress)**:
+  - Launched official documentation site hosted on GitHub Pages ([`https://aman400.github.io/routewarden/`](https://aman400.github.io/routewarden/)).
+  - Built-in client-side full-text search, responsive dark/light mode, and copy-paste code blocks.
+  - Comprehensive guides covering:
+    - **Getting Started & Traefik Setup** (`/guide/getting-started`)
+    - **System Architecture & Request Pipeline** (`/guide/architecture`)
+    - **Local Development & Deployment Walkthrough** (`/guide/local-deployment`)
+    - **Automated Testing & Coverage Architecture** (`/guide/testing`)
+    - **Anti-Evasion Engine Security Analysis** (`/reference/anti-evasion`)
+    - **Full Configuration Options Reference** (`/reference/configuration`)
+- **Ready-to-Run In-Repo Examples Suite (`examples/`)**:
+  - `01-basic-sensitive-files`: Quickstart protecting backend Nginx against `.env`, `.git`, backups, and configs.
+  - `02-global-entrypoint-shield`: Global entrypoint middleware shielding all services across the cluster without per-container labels.
+  - `03-ip-whitelist-vpn`: Bypassing security checks for trusted CIDR / office IP networks.
+  - `04-captcha-challenge`: Side-by-side **hCaptcha** and **Cloudflare Turnstile** verification challenges (confirming no external `captcha.html` file is required).
+  - `05-kubernetes-ingressroute`: Production Traefik Kubernetes `Middleware` and `IngressRoute` CRD manifests.
+- **Automated GitHub Pages CI/CD Pipeline**:
+  - Added [`.github/workflows/deploy-docs.yml`](.github/workflows/deploy-docs.yml) using `@actions/deploy-pages` to build and publish docs on push.
+
+### Changed
+- **Streamlined `README.md`**:
+  - Simplified landing page with a direct quickstart for returning **404 Not Found** error payloads.
+  - Added concise **Basic Configuration Options** summary table.
+  - Added prominent documentation badges and deep links to the VitePress documentation wiki.
+
+---
+
 ## [v0.2.0] - 2026-09-16
 
 ### Added
@@ -64,5 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comprehensive table-driven unit tests and security evasion test suite (`routewarden_test.go`).
   - Documentation and configuration examples for Traefik v2/v3, Docker Compose, and Kubernetes IngressRoute (`README.md`).
 
+[v0.2.1]: https://github.com/aman400/routewarden/compare/v0.2.0...v0.2.1
 [v0.2.0]: https://github.com/aman400/routewarden/compare/v0.1.0...v0.2.0
 [v0.1.0]: https://github.com/aman400/routewarden/releases/tag/v0.1.0
+

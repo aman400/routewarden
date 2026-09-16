@@ -1,0 +1,83 @@
+/* Navbar layout & responsiveness improvements */
+
+/* Fix flex layout in VitePress navbar */
+.VPNavBarTitle {
+  flex-shrink: 0 !important;
+  margin-right: 1.25rem !important;
+}
+
+.VPNavBarTitle .title {
+  display: flex !important;
+  align-items: center !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+}
+
+/* Give search high priority & clear styling */
+.VPNavBarSearch {
+  display: flex !important;
+  align-items: center !important;
+  margin-right: 1.5rem !important;
+  flex-shrink: 0 !important;
+}
+
+/* Styling for local search button */
+.VPNavBarSearch .DocSearch-Button,
+.VPNavBarSearch .search-btn {
+  display: flex !important;
+  align-items: center !important;
+  min-width: 160px !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--vp-c-divider) !important;
+  background-color: var(--vp-c-bg-alt) !important;
+  cursor: pointer !important;
+  transition: border-color 0.25s, background-color 0.25s !important;
+}
+
+.VPNavBarSearch .DocSearch-Button:hover,
+.VPNavBarSearch .search-btn:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  background-color: var(--vp-c-bg-mute) !important;
+}
+
+/* Ensure placeholder text and keys are legible and visible */
+.VPNavBarSearch .DocSearch-Button-Placeholder,
+.VPNavBarSearch .DocSearch-Button-Keys,
+.VPNavBarSearch .DocSearch-Search-Icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.VPNavBarSearch .DocSearch-Button-Placeholder {
+  font-size: 13px !important;
+  color: var(--vp-c-text-2) !important;
+  padding: 0 8px !important;
+}
+
+.VPNavBarSearch .DocSearch-Button-Key {
+  font-size: 11px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  background: var(--vp-c-bg) !important;
+  border: 1px solid var(--vp-c-divider) !important;
+}
+
+/* Content container */
+.VPNavBar .content {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  flex-grow: 1 !important;
+  padding-left: 1rem !important;
+}
+
+.VPNavBarMenuLink,
+.VPNavBarMenuGroup {
+  padding: 0 10px !important;
+  font-size: 13.5px !important;
+  white-space: nowrap !important;
+}

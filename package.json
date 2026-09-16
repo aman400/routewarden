@@ -1,0 +1,17 @@
+{
+  "name": "routewarden-docs",
+  "version": "0.2.1",
+  "description": "Documentation and examples wiki site for RouteWarden Traefik middleware",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync-version": "node scripts/sync-version.mjs",
+    "docs:release": "node scripts/snapshot-version.mjs",
+    "docs:dev": "node scripts/sync-version.mjs && vitepress dev docs",
+    "docs:build": "node scripts/sync-version.mjs && vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}
