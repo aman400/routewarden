@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "RouteWarden"
   text: "High-Performance Traefik Middleware"
-  tagline: "Ultra-fast sensitive path defense, anti-evasion normalization, IP whitelisting, and multi-action responses."
+  tagline: "Stop sensitive file leaks (.env, .git, backups), neutralize path-evasion attacks, whitelist IPs, and serve custom error/captcha responses before requests reach your backend."
   image:
     src: /icon.svg
     alt: RouteWarden Logo
@@ -40,9 +40,97 @@ features:
     details: Drop-in support for Traefik v2/v3, Docker Compose labels (global & per-service), and Kubernetes IngressRoute CRDs.
 ---
 
-## Quick Look
+## What is RouteWarden?
 
-Protecting your services with RouteWarden takes just a few lines of configuration:
+**RouteWarden** is an ultra-fast, zero-dependency Traefik middleware plugin built in pure Go. It acts as an **in-line security shield** deployed at your edge router or ingress controller, safeguarding downstream microservices and web applications from accidental sensitive data exposure, reconnaissance scanners, and path evasion attacks.
+
+Every day, automated bots and vulnerability scanners probe web servers for `.env` files, `.git` credential databases, database backups, admin consoles, and leaked cloud credentials. RouteWarden intercepts and neutralizes these requests at the Traefik proxy layer **before they ever hit your upstream containers**.
+
+---
+
+## Request Inspection Lifecycle
+
+RouteWarden evaluates every inbound HTTP request across four deterministic security stages:
+
+<div class="home-pipeline">
+  <div class="pipeline-step">
+    <div class="pipeline-num">Stage 1</div>
+    <div class="pipeline-title">IP / CIDR Whitelisting</div>
+    <div class="pipeline-desc">Evaluates origin IP against <code>allowedIps</code> via socket <code>RemoteAddr</code>, <code>X-Forwarded-For</code>, or <code>X-Real-IP</code>. Trusted VPN/office IPs bypass checks immediately.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-num">Stage 2</div>
+    <div class="pipeline-title">Anti-Evasion Normalization</div>
+    <div class="pipeline-desc">Unescapes double URL encoding (<code>%252e%252e</code>), strips semicolon matrix parameters (<code>/;param/.env</code>), normalizes IIS backslashes (<code>\</code>), and scrubs null bytes.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-num">Stage 3</div>
+    <div class="pipeline-title">Dual Match Engine</div>
+    <div class="pipeline-desc">Matches against safe overrides (<code>allowPatterns</code>) before testing built-in sensitive dictionaries (<code>.env</code>, <code>.git</code>, backups, configs) and custom <code>pathPatterns</code>.</div>
+  </div>
+  <div class="pipeline-step">
+    <div class="pipeline-num">Stage 4</div>
+    <div class="pipeline-title">Multi-Action Response</div>
+    <div class="pipeline-desc">Emits custom JSON, branded HTML, redirect honeypots, silent TCP drops, or interactive <b>Cloudflare Turnstile</b> / <b>hCaptcha</b> challenges.</div>
+  </div>
+</div>
+
+---
+
+## Common Attack Vectors Blocked Out-of-the-Box
+
+Without requiring any custom regex rules, RouteWarden's `enableDefaultPatterns: true` guards against the most critical OWASP information disclosure vulnerabilities:
+
+<div class="attack-grid">
+  <div class="attack-card">
+    <h4>🔐 Environment & Secrets</h4>
+    <p>Blocks <code>/.env</code>, <code>/.env.local</code>, <code>/.env.production</code>, <code>/.aws/credentials</code>, and <code>/.ssh/id_rsa</code>.</p>
+  </div>
+  <div class="attack-card">
+    <h4>📁 Version Control Repos</h4>
+    <p>Prevents source code leakage via <code>/.git/config</code>, <code>/.git/HEAD</code>, <code>/.svn/entries</code>, and <code>/.hg/</code>.</p>
+  </div>
+  <div class="attack-card">
+    <h4>💾 Database Dumps & Backups</h4>
+    <p>Catches accidental exposure of <code>/dump.sql</code>, <code>/db.bak</code>, <code>/backup.tar.gz</code>, and <code>/site.zip</code>.</p>
+  </div>
+  <div class="attack-card">
+    <h4>⚙️ Configuration & Diagnostics</h4>
+    <p>Guards server manifests like <code>/config.yaml</code>, <code>/app.ini</code>, <code>/phpinfo.php</code>, and Spring <code>/actuator/*</code>.</p>
+  </div>
+</div>
+
+---
+
+## Anti-Evasion Capabilities
+
+Attackers frequently encode paths or use reverse-proxy edge cases to evade simple string-matching rules. RouteWarden eliminates these evasion vectors before matching:
+
+| Evasion Technique | Raw Attacker Payload | RouteWarden Normalized Candidate | Protection Action |
+|---|---|---|---|
+| **Double URL Encoding** | `/%252e%252e/%252eenv` | `/.env` | 🛡️ **Blocked** |
+| **Semicolon Matrix Traversal** | `/public;param=1/..;param=2/.env` | `/.env` | 🛡️ **Blocked** |
+| **Windows / IIS Backslash** | `/static\..\.git\config` | `/.git/config` | 🛡️ **Blocked** |
+| **Null Byte Injection** | `/.env%00.png` | `/.env` | 🛡️ **Blocked** |
+| **Dot-Segment Traversal** | `/images/../.aws/credentials` | `/.aws/credentials` | 🛡️ **Blocked** |
+
+---
+
+## Flexible Response Engines
+
+When a sensitive route is intercepted, you decide how Traefik responds to the client:
+
+- **`json`**: Return clean JSON payloads with customizable status codes (e.g. `403 Forbidden` or `404 Not Found`) and custom error messages.
+- **`html`**: Render branded warning or company error pages with embedded styling.
+- **`captcha`**: Present human verification challenges using **Cloudflare Turnstile**, **hCaptcha**, or **Google reCAPTCHA** without needing any backend captcha server.
+- **`redirect`**: Silently deflect attackers to a honeypot, logging sink, or warning site.
+- **`silentDrop`**: Close the TCP connection immediately without emitting any response payload to confuse automated port scanners.
+
+---
+
+## 60-Second Quickstart
+
+Get RouteWarden running on your Traefik instance in under a minute:
 
 ::: code-group
 
@@ -55,18 +143,23 @@ http:
         routewarden:
           enabled: true
           enableDefaultPatterns: true
+          # Optional custom regex patterns to guard
           pathPatterns:
             - '(?i)^/admin(/.*)?$'
             - '(?i)^/api/internal(/.*)?$'
+          # Safe exceptions (always allowed)
           allowPatterns:
             - '(?i)^/api/internal/health$'
             - '(?i)^/robots\.txt$'
+          # Whitelisted VPN or office IPs
           allowedIps:
             - "10.0.0.0/8"
+            - "192.168.1.100"
+          # Response configuration
           response:
             mode: json
-            statusCode: 403
-            body: '{"error":"Forbidden","message":"Sensitive route protected"}'
+            statusCode: 404
+            body: '{"error":"Not Found","message":"The requested resource does not exist"}'
 
   routers:
     app-router:
@@ -91,12 +184,12 @@ http:
   enableDefaultPatterns = true
   pathPatterns = ["(?i)^/admin(/.*)?$", "(?i)^/api/internal(/.*)?$"]
   allowPatterns = ["(?i)^/api/internal/health$", "(?i)^/robots\\.txt$"]
-  allowedIps = ["10.0.0.0/8"]
+  allowedIps = ["10.0.0.0/8", "192.168.1.100"]
 
 [http.middlewares.global-warden.plugin.routewarden.response]
   mode = "json"
-  statusCode = 403
-  body = '{"error":"Forbidden","message":"Sensitive route protected"}'
+  statusCode = 404
+  body = '{"error":"Not Found","message":"The requested resource does not exist"}'
 ```
 
 ```bash [CLI]
@@ -105,8 +198,19 @@ http:
 - "traefik.http.middlewares.global-warden.plugin.routewarden.enableDefaultPatterns=true"
 - "traefik.http.middlewares.global-warden.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/api/internal(/.*)?$"
 - "traefik.http.middlewares.global-warden.plugin.routewarden.allowPatterns=(?i)^/api/internal/health$,(?i)^/robots\\.txt$"
-- "traefik.http.middlewares.global-warden.plugin.routewarden.allowedIps=10.0.0.0/8"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.allowedIps=10.0.0.0/8,192.168.1.100"
 - "traefik.http.middlewares.global-warden.plugin.routewarden.response.mode=json"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.response.statusCode=404"
+- 'traefik.http.middlewares.global-warden.plugin.routewarden.response.body={"error":"Not Found","message":"The requested resource does not exist"}'
 ```
 
 :::
+
+---
+
+## Ready to Explore?
+
+- Check out the [Getting Started Guide](/guide/getting-started) for step-by-step installation instructions.
+- Learn about the [System Architecture](/guide/architecture) and how RouteWarden processes requests.
+- Explore the [Examples Cookbook](/examples/overview) for Docker Compose and Kubernetes manifests.
+- Read the [Anti-Evasion Security Deep Dive](/reference/anti-evasion) for security test results.

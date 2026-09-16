@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assets/icon.svg" alt="RouteWarden Logo" width="140" height="140" />
   <h1>RouteWarden</h1>
-  <p><strong>Ultra-fast Traefik middleware plugin to block sensitive files, honeypot probes, and unauthorized routes.</strong></p>
+  <p><strong>High-performance Traefik middleware to stop sensitive file exposure (.env, .git, backups), neutralize path-evasion attacks, whitelist IPs, and serve custom error/captcha responses before requests reach your backend.</strong></p>
 </div>
 
 <p align="center">
