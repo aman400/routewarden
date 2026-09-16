@@ -56,7 +56,7 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
-      - "--experimental.plugins.routewarden.version=v0.2.1"
+      - "--experimental.plugins.routewarden.version=v0.2.2"
     ports:
       - "80:80"
     volumes:
@@ -95,7 +95,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/aman400/routewarden
-      version: v0.2.1
+      version: v0.2.2
 ```
 
 #### 2. Dynamic Configuration (`dynamic_conf.yml`)

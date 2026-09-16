@@ -98,28 +98,76 @@ Below are complete, production-tested RouteWarden configurations designed for sp
 ### 🌟 Blueprint A: WordPress / WooCommerce Store
 Stops XML-RPC amplification attacks, wp-config exposure, and brute-force bot scans on wp-login:
 
-```yaml
-services:
-  wordpress:
-    image: wordpress:latest
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.wp.rule=Host(`shop.example.com`)"
-      - "traefik.http.routers.wp.middlewares=wp-warden"
+::: code-group
 
-      # RouteWarden Hardening
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.enabled=true"
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.enableDefaultPatterns=true"
-      # Block sensitive WordPress files & attack vectors
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.pathPatterns=(?i)(^|/)(xmlrpc\\.php|wp-config\\.php|install\\.php|license\\.txt|readme\\.html)$"
-      # Exempt legitimate public endpoints
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.allowPatterns=(?i)^/wp-content/uploads/.*,(?i)^/robots\\.txt$"
-      # Trusted admin IP bypass (bypasses all blocks)
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.allowedIps=203.0.113.50"
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.response.mode=text"
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.response.statusCode=404"
-      - "traefik.http.middlewares.wp-warden.plugin.routewarden.response.body=404 Not Found"
+```yaml [File (YAML)]
+# dynamic_conf.yml
+http:
+  middlewares:
+    wp-warden:
+      plugin:
+        routewarden:
+          enabled: true
+          enableDefaultPatterns: true
+          pathPatterns:
+            - '(?i)(^|/)(xmlrpc\.php|wp-config\.php|install\.php|license\.txt|readme\.html)$'
+          allowPatterns:
+            - '(?i)^/wp-content/uploads/.*'
+            - '(?i)^/robots\.txt$'
+          allowedIps:
+            - "203.0.113.50"
+          response:
+            mode: text
+            statusCode: 404
+            body: "404 Not Found"
+
+  routers:
+    wp-router:
+      rule: "Host(`shop.example.com`)"
+      entryPoints:
+        - web
+      middlewares:
+        - wp-warden
+      service: wp-service
 ```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.wp-router]
+  rule = "Host(`shop.example.com`)"
+  entryPoints = ["web"]
+  middlewares = ["wp-warden"]
+  service = "wp-service"
+
+[http.middlewares.wp-warden.plugin.routewarden]
+  enabled = true
+  enableDefaultPatterns = true
+  pathPatterns = ["(?i)(^|/)(xmlrpc\\.php|wp-config\\.php|install\\.php|license\\.txt|readme\\.html)$"]
+  allowPatterns = ["(?i)^/wp-content/uploads/.*", "(?i)^/robots\\.txt$"]
+  allowedIps = ["203.0.113.50"]
+
+[http.middlewares.wp-warden.plugin.routewarden.response]
+  mode = "text"
+  statusCode = 404
+  body = "404 Not Found"
+```
+
+```bash [CLI]
+# Docker Compose Labels / CLI equivalent
+- "traefik.enable=true"
+- "traefik.http.routers.wp.rule=Host(`shop.example.com`)"
+- "traefik.http.routers.wp.middlewares=wp-warden"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.enabled=true"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.enableDefaultPatterns=true"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.pathPatterns=(?i)(^|/)(xmlrpc\\.php|wp-config\\.php|install\\.php|license\\.txt|readme\\.html)$"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.allowPatterns=(?i)^/wp-content/uploads/.*,(?i)^/robots\\.txt$"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.allowedIps=203.0.113.50"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.response.mode=text"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.response.statusCode=404"
+- "traefik.http.middlewares.wp-warden.plugin.routewarden.response.body=404 Not Found"
+```
+
+:::
 
 ### 🌟 Blueprint B: Next.js / React / SvelteKit Full-Stack App
 Protects internal server assets, environment secrets, and build manifests:

@@ -25,11 +25,14 @@
 
 ## Installation & Traefik Setup
 
-### 1. Static Configuration (`traefik.yml`)
+### 1. Static Configuration
 
-Declare RouteWarden in Traefik's plugins section:
+Declare RouteWarden in Traefik's plugins configuration:
 
-```yaml
+::: code-group
+
+```yaml [File (YAML)]
+# traefik.yml
 experimental:
   plugins:
     routewarden:
@@ -37,20 +40,48 @@ experimental:
       version: {{version}}
 ```
 
-If you are developing locally:
-
-```yaml
-experimental:
-  localPlugins:
-    routewarden:
-      moduleName: github.com/aman400/routewarden
+```toml [File (TOML)]
+# traefik.toml
+[experimental.plugins.routewarden]
+  moduleName = "github.com/aman400/routewarden"
+  version = "{{version}}"
 ```
+
+```bash [CLI]
+traefik \
+  --experimental.plugins.routewarden.modulename=github.com/aman400/routewarden \
+  --experimental.plugins.routewarden.version={{version}}
+```
+
+:::
+
+> **Local Development (`localPlugins`)**:
+> ::: code-group
+> ```yaml [File (YAML)]
+> experimental:
+>   localPlugins:
+>     routewarden:
+>       moduleName: github.com/aman400/routewarden
+> ```
+> ```toml [File (TOML)]
+> [experimental.localPlugins.routewarden]
+>   moduleName = "github.com/aman400/routewarden"
+> ```
+> ```bash [CLI]
+> traefik --experimental.localplugins.routewarden.modulename=github.com/aman400/routewarden
+> ```
+> :::
 
 ---
 
-### 2. Dynamic Configuration (`dynamic_conf.yml`)
+### 2. Dynamic Configuration
 
-```yaml
+Configure the RouteWarden middleware and attach it to your router:
+
+::: code-group
+
+```yaml [File (YAML)]
+# dynamic_conf.yml
 http:
   middlewares:
     route-shield:
@@ -75,6 +106,34 @@ http:
         - route-shield
       service: app-service
 ```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.app-router]
+  rule = "Host(`app.example.com`)"
+  entryPoints = ["web"]
+  middlewares = ["route-shield"]
+  service = "app-service"
+
+[http.middlewares.route-shield.plugin.routewarden]
+  enabled = true
+  enableDefaultPatterns = true
+  allowedIps = ["127.0.0.1", "10.0.0.0/8"]
+
+[http.middlewares.route-shield.plugin.routewarden.response]
+  mode = "json"
+  statusCode = 403
+  body = '{"error":"Forbidden","message":"Sensitive route protected by RouteWarden"}'
+```
+
+```bash [CLI]
+# Note: Dynamic configurations in Traefik can also be declared via Docker Compose labels or CLI
+traefik \
+  --entrypoints.web.address=:80 \
+  --entrypoints.web.http.middlewares=route-shield@docker
+```
+
+:::
 
 ---
 

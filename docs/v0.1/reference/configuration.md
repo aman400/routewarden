@@ -1,11 +1,11 @@
-# Configuration Reference (v0.1.0)
+# Configuration Reference (v0.1.x)
 
 ::: warning Legacy Version Notice
-You are currently viewing the documentation for **v0.1.0**.  
+You are currently viewing the documentation for the **v0.1.x series**.  
 For the newest features (such as `allowedIps` CIDR/IP whitelisting), visit [Latest Configuration](/reference/configuration).
 :::
 
-## Options in v0.1.0
+## Options in v0.1.x
 
 | Key | Type | Default | Description |
 |---|---|---|---|
