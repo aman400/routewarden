@@ -13,6 +13,16 @@
 
 ---
 
+## Supported Traefik Versions
+
+| Traefik Version | Compatibility | Notes |
+|---|---|---|
+| **Traefik v3.x** (v3.0, v3.1, v3.2+) | ✅ **Supported** | Full support for Traefik v3 runtime, CLI flags, Docker Compose labels, and IngressRoute CRDs. |
+| **Traefik v2.x** (v2.8 – v2.11+) | ✅ **Supported** | Fully compatible with Traefik v2 plugin mechanism. |
+| **Traefik v1.x** | ❌ **Not Supported** | External Yaegi middleware plugins are not available in Traefik v1. |
+
+---
+
 ## Installation & Traefik Setup
 
 ### 1. Static Configuration (`traefik.yml`)
@@ -24,7 +34,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/aman400/routewarden
-      version: v0.2.0
+      version: {{version}}
 ```
 
 If you are developing locally:

@@ -50,11 +50,19 @@ services:
     image: traefik:v3.1
     command:
       - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
-      - "--experimental.plugins.routewarden.version=v0.2.0"
+      - "--experimental.plugins.routewarden.version={{version}}"
       - "--entrypoints.web.http.middlewares=global-warden@docker"
     labels:
+      # Enable RouteWarden middleware (Default: true)
       - "traefik.http.middlewares.global-warden.plugin.routewarden.enabled=true"
+      # Block built-in sensitive files: .env*, .git, .aws, .sql, .bak, etc. (Default: true)
       - "traefik.http.middlewares.global-warden.plugin.routewarden.enableDefaultPatterns=true"
+      # (Optional) Additional custom regex patterns to block (Default: [])
+      - "traefik.http.middlewares.global-warden.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/api/internal(/.*)?$"
+      # (Optional) Safe exception overrides to always allow (Default: robots.txt, ads.txt, sitemap.xml, .well-known/*)
+      - "traefik.http.middlewares.global-warden.plugin.routewarden.allowPatterns=(?i)^/api/internal/health$,(?i)^/robots\\.txt$"
+      # (Optional) Trusted IP / CIDR subnet bypass (Default: [])
       - "traefik.http.middlewares.global-warden.plugin.routewarden.allowedIps=10.0.0.0/8"
+      # Response mode: text, json, html, captcha, redirect (Default: text, StatusCode: 403)
       - "traefik.http.middlewares.global-warden.plugin.routewarden.response.mode=json"
 ```

@@ -5,8 +5,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "docs:release": "node scripts/snapshot-version.mjs",
+    "docs:dev": "node scripts/sync-version.mjs && vitepress dev docs",
+    "docs:build": "node scripts/sync-version.mjs && vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {

@@ -9,7 +9,7 @@ Deploy RouteWarden natively within Kubernetes clusters managed by the Traefik In
 ```yaml
 additionalArguments:
   - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
-  - "--experimental.plugins.routewarden.version=v0.2.0"
+  - "--experimental.plugins.routewarden.version=v0.2.1"
 ```
 
 ## Applying the CRD
