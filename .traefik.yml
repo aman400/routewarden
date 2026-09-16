@@ -1,0 +1,23 @@
+displayName: RouteWarden
+type: middleware
+import: github.com/aman400/routewarden
+
+summary: 'Block requests targeting sensitive endpoints, files (.env, configs, backups), or custom path regexes with custom JSON, HTML, Captcha, or status codes.'
+
+testData:
+  enabled: true
+  enableDefaultPatterns: true
+  pathPatterns:
+    - '(?i)(^|/)(\.env.*|.*\.(txt|log|bak|backup|sql|conf|config|ini|yaml|yml))'
+    - '(?i)^/admin/(secrets|internal)(/.*)?$'
+  allowPatterns:
+    - '(?i)^/robots\.txt$'
+    - '(?i)^/ads\.txt$'
+    - '(?i)^/\.well-known(/.*)?$'
+  checkQuery: false
+  response:
+    mode: json
+    statusCode: 403
+    body: '{"error":"Forbidden","message":"Access to sensitive endpoint is blocked","status":403}'
+    headers:
+      X-RouteWarden-Protection: 'active'
