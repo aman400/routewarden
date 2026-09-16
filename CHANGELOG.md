@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Out-of-the-box rule set for blocking `.env*`, `.git`, `.svn`, `.aws`, `.ssh`, backups (`.bak`, `.backup`, `.sql`, `.tar.gz`, `.zip`), configs (`.conf`, `.config`, `.ini`, `.yaml`, `.yml`), logs (`.log`), lockfiles, and debug/status endpoints (`phpinfo.php`, `/actuator/*`).
   - Configurable `pathPatterns` and `blockPatterns` for custom regex matching.
   - Configurable `allowPatterns` override list (defaults include `/robots.txt`, `/ads.txt`, `/security.txt`, and `/.well-known/*`).
+  - Configurable `allowedIps` for exempting trusted client IPs or CIDR subnets (IPv4 and IPv6) with support for `X-Forwarded-For`, `X-Real-IP`, and socket `RemoteAddr`.
 
 - **Flexible Response Actions**:
   - **`json`**: Return custom JSON payloads with automatic `application/json` Content-Type and custom HTTP status codes.
