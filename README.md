@@ -112,7 +112,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/aman400/routewarden
-      version: v0.1.0
+      version: v0.2.0
 ```
 
 For **local development**:
