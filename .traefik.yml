@@ -1,6 +1,7 @@
 displayName: RouteWarden
 type: middleware
 import: github.com/aman400/routewarden
+icon: assets/icon.svg
 
 summary: 'Block requests targeting sensitive endpoints, files (.env, configs, backups), or custom path regexes with custom JSON, HTML, Captcha, or status codes.'
 
@@ -14,6 +15,9 @@ testData:
     - '(?i)^/robots\.txt$'
     - '(?i)^/ads\.txt$'
     - '(?i)^/\.well-known(/.*)?$'
+  allowedIps:
+    - '127.0.0.1'
+    - '10.0.0.0/8'
   checkQuery: false
   response:
     mode: json
