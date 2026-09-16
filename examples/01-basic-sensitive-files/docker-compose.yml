@@ -1,0 +1,32 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+      - "--experimental.plugins.routewarden.version=v0.2.1"
+    ports:
+      - "80:80"
+      - "8080:8080" # Traefik Web Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  webapp:
+    image: nginx:alpine
+    volumes:
+      - ./site:/usr/share/nginx/html:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webapp.rule=Host(`localhost`) || Host(`app.localhost`)"
+      - "traefik.http.routers.webapp.entrypoints=web"
+      - "traefik.http.routers.webapp.middlewares=warden-shield"
+
+      # RouteWarden Middleware Configuration
+      - "traefik.http.middlewares.warden-shield.plugin.routewarden.enabled=true"
+      - "traefik.http.middlewares.warden-shield.plugin.routewarden.enableDefaultPatterns=true"
+      - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.mode=json"
+      - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.statusCode=403"
+      - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.body={\"error\":\"Forbidden\",\"message\":\"Sensitive path blocked by RouteWarden\"}"
