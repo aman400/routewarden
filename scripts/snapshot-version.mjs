@@ -87,24 +87,27 @@ for (const dir of dirsToSnapshot) {
 
 // 3. Update docs/versions.json
 // Re-point previous latest to its archived snapshot
-const updatedVersions = registry.versions.filter(v => v.tag !== cleanNewVersion && v.tag !== currentVersion)
+const newSeries = `v${cleanNewVersion.replace(/^v/, '').split('.').slice(0, 2).join('.')}.x`
+const prevSeries = `v${versionParts[0]}.${versionParts[1]}.x`
+
+const updatedVersions = registry.versions.filter(v => v.tag !== newSeries && v.tag !== prevSeries)
 
 // Add new latest version at top
 const newRegistryVersions = [
   {
-    text: `${cleanNewVersion} (Latest)`,
+    text: `${newSeries} (Latest)`,
     link: '/guide/getting-started',
-    tag: cleanNewVersion
+    tag: newSeries
   },
   {
-    text: `${currentVersion}`,
+    text: `${prevSeries}`,
     link: `/${minorSnapshotDirName}/guide/getting-started`,
-    tag: currentVersion
+    tag: prevSeries
   },
   ...updatedVersions
 ]
 
-registry.current = cleanNewVersion
+registry.current = newSeries
 registry.versions = newRegistryVersions
 fs.writeFileSync(versionsRegistryPath, JSON.stringify(registry, null, 2) + '\n', 'utf8')
 console.log(`  ✓ Updated docs/versions.json`)

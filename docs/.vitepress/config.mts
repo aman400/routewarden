@@ -44,16 +44,17 @@ export default defineConfig({
         items: [
           { text: 'Configuration Options', link: '/reference/configuration' },
           { text: 'Custom Path Patterns', link: '/reference/custom-paths' },
-          { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' }
+          { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' },
+          { text: 'Changelog & Migrations', link: '/reference/changelog' }
         ]
       },
       { text: 'Examples', link: '/examples/overview', activeMatch: '^/examples/' },
       {
-        text: versionData.version,
+        text: 'v0.2.x',
         activeMatch: '^/v0\\.',
         items: [
           ...versionsRegistry.versions.map(v => ({ text: v.text, link: v.link })),
-          { text: 'Changelog', link: 'https://github.com/aman400/routewarden/blob/main/CHANGELOG.md' },
+          { text: 'Changelog & Breaking Changes', link: '/reference/changelog' },
           { text: 'Traefik Plugin Catalog', link: 'https://plugins.traefik.io' }
         ]
       }
@@ -61,11 +62,11 @@ export default defineConfig({
     sidebar: {
       '/v0.1/': [
         {
-          text: 'RouteWarden v0.1.0',
+          text: 'RouteWarden v0.1.x',
           collapsed: false,
           items: [
-            { text: 'Overview & Setup (v0.1)', link: '/v0.1/guide/getting-started' },
-            { text: 'Configuration (v0.1)', link: '/v0.1/reference/configuration' },
+            { text: 'Overview & Setup (v0.1.x)', link: '/v0.1/guide/getting-started' },
+            { text: 'Configuration (v0.1.x)', link: '/v0.1/reference/configuration' },
             { text: 'Switch to Latest (v0.2.x) ➔', link: '/guide/getting-started' }
           ]
         }
@@ -87,7 +88,8 @@ export default defineConfig({
           items: [
             { text: 'Configuration Reference', link: '/reference/configuration' },
             { text: 'Custom Path Patterns', link: '/reference/custom-paths' },
-            { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' }
+            { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' },
+            { text: 'Changelog & Migration', link: '/reference/changelog' }
           ]
         },
         {

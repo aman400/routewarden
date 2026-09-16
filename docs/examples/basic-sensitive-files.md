@@ -4,7 +4,80 @@ This scenario protects a web application against reconnaissance and exposure of 
 
 ---
 
-## Docker Compose Configuration
+## Configuration Preview
+
+::: code-group
+
+```yaml [File (YAML)]
+# dynamic_conf.yml
+http:
+  middlewares:
+    warden-shield:
+      plugin:
+        routewarden:
+          enabled: true
+          enableDefaultPatterns: true
+          response:
+            mode: json
+            statusCode: 403
+            body: '{"error":"Forbidden","message":"Sensitive path blocked by RouteWarden"}'
+
+  routers:
+    webapp-router:
+      rule: "Host(`localhost`)"
+      entryPoints:
+        - web
+      middlewares:
+        - warden-shield
+      service: webapp-service
+
+  services:
+    webapp-service:
+      loadBalancer:
+        servers:
+          - url: "http://webapp:80"
+```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.webapp-router]
+  rule = "Host(`localhost`)"
+  entryPoints = ["web"]
+  middlewares = ["warden-shield"]
+  service = "webapp-service"
+
+[http.services.webapp-service.loadBalancer]
+  [[http.services.webapp-service.loadBalancer.servers]]
+    url = "http://webapp:80"
+
+[http.middlewares.warden-shield.plugin.routewarden]
+  enabled = true
+  enableDefaultPatterns = true
+
+[http.middlewares.warden-shield.plugin.routewarden.response]
+  mode = "json"
+  statusCode = 403
+  body = '{"error":"Forbidden","message":"Sensitive path blocked by RouteWarden"}'
+```
+
+```bash [CLI]
+# Traefik Docker Compose Labels / CLI equivalent
+- "traefik.enable=true"
+- "traefik.http.routers.webapp.rule=Host(`localhost`)"
+- "traefik.http.routers.webapp.entrypoints=web"
+- "traefik.http.routers.webapp.middlewares=warden-shield"
+- "traefik.http.middlewares.warden-shield.plugin.routewarden.enabled=true"
+- "traefik.http.middlewares.warden-shield.plugin.routewarden.enableDefaultPatterns=true"
+- "traefik.http.middlewares.warden-shield.plugin.routewarden.response.mode=json"
+- "traefik.http.middlewares.warden-shield.plugin.routewarden.response.statusCode=403"
+- 'traefik.http.middlewares.warden-shield.plugin.routewarden.response.body={"error":"Forbidden","message":"Sensitive path blocked by RouteWarden"}'
+```
+
+:::
+
+---
+
+## Docker Compose Example
 
 ```yaml
 services:

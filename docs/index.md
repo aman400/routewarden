@@ -42,27 +42,71 @@ features:
 
 ## Quick Look
 
-Protecting your entire infrastructure with RouteWarden takes just a few labels in Docker Compose:
+Protecting your services with RouteWarden takes just a few lines of configuration:
 
-```yaml
-services:
-  traefik:
-    image: traefik:v3.1
-    command:
-      - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
-      - "--experimental.plugins.routewarden.version={{version}}"
-      - "--entrypoints.web.http.middlewares=global-warden@docker"
-    labels:
-      # Enable RouteWarden middleware (Default: true)
-      - "traefik.http.middlewares.global-warden.plugin.routewarden.enabled=true"
-      # Block built-in sensitive files: .env*, .git, .aws, .sql, .bak, etc. (Default: true)
-      - "traefik.http.middlewares.global-warden.plugin.routewarden.enableDefaultPatterns=true"
-      # (Optional) Additional custom regex patterns to block (Default: [])
-      - "traefik.http.middlewares.global-warden.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/api/internal(/.*)?$"
-      # (Optional) Safe exception overrides to always allow (Default: robots.txt, ads.txt, sitemap.xml, .well-known/*)
-      - "traefik.http.middlewares.global-warden.plugin.routewarden.allowPatterns=(?i)^/api/internal/health$,(?i)^/robots\\.txt$"
-      # (Optional) Trusted IP / CIDR subnet bypass (Default: [])
-      - "traefik.http.middlewares.global-warden.plugin.routewarden.allowedIps=10.0.0.0/8"
-      # Response mode: text, json, html, captcha, redirect (Default: text, StatusCode: 403)
-      - "traefik.http.middlewares.global-warden.plugin.routewarden.response.mode=json"
+::: code-group
+
+```yaml [File (YAML)]
+# dynamic_conf.yml
+http:
+  middlewares:
+    global-warden:
+      plugin:
+        routewarden:
+          enabled: true
+          enableDefaultPatterns: true
+          pathPatterns:
+            - '(?i)^/admin(/.*)?$'
+            - '(?i)^/api/internal(/.*)?$'
+          allowPatterns:
+            - '(?i)^/api/internal/health$'
+            - '(?i)^/robots\.txt$'
+          allowedIps:
+            - "10.0.0.0/8"
+          response:
+            mode: json
+            statusCode: 403
+            body: '{"error":"Forbidden","message":"Sensitive route protected"}'
+
+  routers:
+    app-router:
+      rule: "Host(`example.com`)"
+      entryPoints:
+        - web
+      middlewares:
+        - global-warden
+      service: app-service
 ```
+
+```toml [File (TOML)]
+# dynamic_conf.toml
+[http.routers.app-router]
+  rule = "Host(`example.com`)"
+  entryPoints = ["web"]
+  middlewares = ["global-warden"]
+  service = "app-service"
+
+[http.middlewares.global-warden.plugin.routewarden]
+  enabled = true
+  enableDefaultPatterns = true
+  pathPatterns = ["(?i)^/admin(/.*)?$", "(?i)^/api/internal(/.*)?$"]
+  allowPatterns = ["(?i)^/api/internal/health$", "(?i)^/robots\\.txt$"]
+  allowedIps = ["10.0.0.0/8"]
+
+[http.middlewares.global-warden.plugin.routewarden.response]
+  mode = "json"
+  statusCode = 403
+  body = '{"error":"Forbidden","message":"Sensitive route protected"}'
+```
+
+```bash [CLI]
+# Docker Compose Labels / CLI equivalent
+- "traefik.http.middlewares.global-warden.plugin.routewarden.enabled=true"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.enableDefaultPatterns=true"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/api/internal(/.*)?$"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.allowPatterns=(?i)^/api/internal/health$,(?i)^/robots\\.txt$"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.allowedIps=10.0.0.0/8"
+- "traefik.http.middlewares.global-warden.plugin.routewarden.response.mode=json"
+```
+
+:::
