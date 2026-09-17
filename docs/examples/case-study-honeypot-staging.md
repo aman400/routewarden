@@ -113,3 +113,11 @@ http:
 2. **Client Memory Exhaustion (OOM)**: Most automated crawler libraries (`requests`, `urllib3`, Go/Python scrapers) auto-decompress gzip responses in RAM. When the stream expands to 10+ GB, the attacker's crawler crashes from out-of-memory errors or locks up its worker pool.
 3. **Scan Halting**: The attacker's scanning process terminates, preventing further probing across your infrastructure.
 
+::: warning CAUTION: Impact on Legitimate Crawlers & Browsers
+Legitimate web browsers and search engine indexers (such as **Googlebot**, **Bingbot**, or **Applebot**) automatically decompress gzip content encoding. 
+
+- **Do NOT bind `gzipBomb` as a global entrypoint catch-all** across all application routes.
+- **Always keep `enableDefaultAllowPatterns: true`** (or explicitly whitelist `/robots.txt` and `/sitemap.xml`) so search engine indexers are never trapped.
+- **Only target explicit, high-confidence exploit paths** that standard human users and valid search spiders will never request (e.g., `^/\.env`, `^/\.git`, `^/wp-login\.php`, `^/phpmyadmin`).
+:::
+

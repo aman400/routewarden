@@ -222,3 +222,76 @@
   margin: 0;
   line-height: 1.5;
 }
+
+/* Active Defense Gzip Bomb Banner */
+.bomb-callout {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(249, 115, 22, 0.08) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 24px 0 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bomb-callout-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.bomb-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+.bomb-callout-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+  margin: 0;
+}
+
+.bomb-callout-body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--vp-c-text-2);
+  margin: 0 0 12px 0;
+}
+
+.bomb-callout-code {
+  background: var(--vp-c-bg-alt);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+  color: var(--vp-c-brand-1);
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.bomb-callout-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--vp-c-text-1);
+}
+
+.bomb-callout-warning strong {
+  color: #eab308;
+}

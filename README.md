@@ -38,7 +38,7 @@
 - 📁 **Zero-Config File Guard**: Out-of-the-box blocking for `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, server logs, and debug endpoints.
 - ⚡ **Anti-Evasion Engine**: Normalizes multi-layer URL encoding (`%252e%252e`), semicolon matrix parameters (`/;param/.env`), Windows backslashes (`\`), and null bytes.
 - 🌐 **IP & CIDR Whitelist**: Bypass blocking for corporate VPNs, office IPs, or developer subnets (`10.0.0.0/8`, `100.64.0.0/10`).
-- 🎭 **Flexible Responses**: Neutralize probe attempts with standard **404 Not Found** (making endpoints appear non-existent), **403 Forbidden**, custom JSON, HTML, honeypot **Redirects**, or interactive **Turnstile / hCaptcha** challenges.
+- 🎭 **Flexible Responses & Active Defense**: Neutralize probe attempts with standard **404 Not Found** (making endpoints appear non-existent), **403 Forbidden**, custom JSON, HTML, honeypot **Redirects**, interactive **Turnstile / hCaptcha** challenges, silent TCP drops, or an active **Gzip Bomb** (`gzipBomb`) that expands ~1000x in crawler RAM to halt automated reconnaissance scanners.
 
 ---
 
@@ -153,7 +153,8 @@ http:
 | `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
 
-> 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://aman400.github.io/routewarden/reference/configuration)**.
+> 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://aman400.github.io/routewarden/reference/configuration)**.  
+> ⚠️ **Note on `gzipBomb`**: Only attach this mode to confirmed exploit endpoints (`/.env`, `wp-login.php`, honeypots). Never attach it globally to public routes where legitimate search engine bots (Googlebot, Bingbot) or normal visitors could be impacted. Always keep `enableDefaultAllowPatterns: true` so `/robots.txt` is allowed.
 
 ---
 
