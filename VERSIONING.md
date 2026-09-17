@@ -1,89 +1,101 @@
-# RouteWarden Release & Version Update Guide
+# RouteWarden Plugin Versioning & Release Guide
 
-This guide explains how versioning works in RouteWarden and how to publish patch updates, minor releases, and new documentation series snapshots.
+This document explains how versioning is managed for the **RouteWarden** Traefik middleware plugin repository (`github.com/routewarden/traefik-warden`).
 
 ---
 
-## Architecture & Single Source of Truth
+## 1. Single Source of Truth (`version.json`)
 
-RouteWarden uses [docs/version.json](file:///Users/aman/git/routewarden/docs/version.json) as the **single source of truth** for versioning:
+The canonical version of RouteWarden is stored in [`version.json`](version.json) at the repository root:
 
 ```json
 {
-  "version": "v0.2.2"
+  "version": "v0.2.4"
 }
 ```
 
-Whenever this version changes, RouteWarden's automated tooling synchronizes it across:
-- Root `package.json` (`version: "0.2.2"`)
-- Root `README.md` Traefik CLI flags and YAML configurations
-- All `examples/**/docker-compose.yml` Traefik plugin flags (`--experimental.plugins.routewarden.version=...`)
-- All VitePress markdown pages using `{{version}}` dynamic interpolation
+Whenever you prepare a release, update this file or use the automated synchronization script.
 
 ---
 
-## 1. Patch & Maintenance Updates (e.g. `v0.2.2` ➔ `v0.2.3`)
+## 2. Semantic Versioning Specification
 
-Patch releases and minor non-breaking fixes do not require creating a new documentation snapshot. The documentation continues to serve the `v0.2.x` series.
+RouteWarden follows standard [Semantic Versioning (SemVer 2.0.0)](https://semver.org/):
 
-### Step-by-Step:
-1. **Update `docs/version.json`**:
-   ```json
-   {
-     "version": "v0.2.3"
-   }
-   ```
-2. **Run Version Sync**:
-   ```bash
-   npm run sync-version
-   ```
-3. **Verify Changes**:
-   ```bash
-   npm test
-   git diff
-   ```
-4. **Commit and Tag**:
-   ```bash
-   git commit -am "chore: release v0.2.3"
-   git tag v0.2.3
-   git push origin main --tags
-   ```
+$$\text{v}\mathbf{MAJOR}.\mathbf{MINOR}.\mathbf{PATCH}$$
+
+- **MAJOR** (`v1.0.0`): Breaking architectural changes, incompatible configuration format, or modified middleware behaviors.
+- **MINOR** (`v0.3.0`): Backwards-compatible features (e.g., new response modes, novel anti-evasion rules, new matching options).
+- **PATCH** (`v0.2.5`): Backwards-compatible bug fixes, security hardening, or performance optimizations.
 
 ---
 
-## 2. New Major or Minor Series Release (e.g. `v0.2.x` ➔ `v0.3.0`)
+## 3. Automated Version Synchronization
 
-When releasing a new version series that introduces breaking changes or significant features warranting an archived version of past documentation, use `npm run docs:release`.
+When a release is published, Traefik plugin catalogs, CLI options, and example manifests must reference the exact Git tag.
 
-### Command:
+To automate this across all files, run [`scripts/update-version.sh`](scripts/update-version.sh):
+
+### Mode A: Read directly from `version.json`
+Update the version inside [`version.json`](version.json), then run:
 ```bash
-npm run docs:release v0.3.0
+./scripts/update-version.sh
 ```
 
-### What Happens Automatically:
-1. **Archives Documentation**:
-   - Copies `docs/guide`, `docs/reference`, and `docs/examples` into a frozen snapshot directory `docs/v0.2/`.
-   - Injects a `Legacy Version Notice` banner with a one-click link back to Latest at the top of each archived markdown file.
-2. **Updates Version Registry (`docs/versions.json`)**:
-   - Re-points the previous series (`v0.2.x`) to the archived `/v0.2/guide/getting-started`.
-   - Promotes the new series (`v0.3.x (Latest)`) to `/guide/getting-started`.
-3. **Updates `docs/version.json`**:
-   - Sets target version to `v0.3.0`.
-4. **Cascades Version Synchronization**:
-   - Replaces plugin version strings in `package.json`, `README.md`, and all `docker-compose.yml` examples.
-5. **VitePress Live Preview**:
-   - The top navbar dropdown immediately allows users to switch between `v0.3.x (Latest)` and legacy `v0.2.x` snapshots.
+### Mode B: Pass target version via CLI
+Pass the new version as an argument. The script will automatically update `version.json` and sync all files:
+```bash
+./scripts/update-version.sh v0.2.5
+```
+
+### What gets synchronized:
+1. **[`version.json`](version.json)**: Canonical single source of truth.
+2. **[`README.md`](README.md)**:
+   - CLI flags: `--experimental.plugins.routewarden.version=vX.Y.Z`
+   - YAML config: `version: vX.Y.Z`
+3. **[`examples/`](examples/) manifests**:
+   - `examples/01-basic-sensitive-files/docker-compose.yml`
+   - `examples/02-global-entrypoint-shield/docker-compose.yml`
+   - `examples/03-ip-whitelist-vpn/docker-compose.yml`
+   - `examples/04-captcha-challenge/docker-compose.yml`
+   - `examples/05-kubernetes-ingressroute/README.md`
 
 ---
 
-## 3. Testing & CI Verification
+## 4. Step-by-Step Release Workflow
 
-Before pushing any release:
-
+### Step 1: Run Quality & Security Checks
+Verify all Go tests pass with race detection:
 ```bash
-# Run script unit tests and Go plugin tests
-npm run test:all
-
-# Validate VitePress docs build and dead-link check
-npm run docs:build
+go test -v -race ./...
+go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
 ```
+
+### Step 2: Update Version Strings
+Run the update script:
+```bash
+./scripts/update-version.sh v0.2.5
+```
+
+### Step 3: Review Diff & Commit
+```bash
+git diff
+git add -u
+git commit -m "chore: release v0.2.5"
+```
+
+### Step 4: Tag & Push
+Traefik's plugin catalog and Yaegi interpreter resolve plugins via **Git tags**:
+```bash
+git tag v0.2.5
+git push origin main --tags
+```
+
+---
+
+## 5. Documentation Repository Coordination
+
+The documentation wiki is maintained in the dedicated repository:  
+👉 [**`github.com/routewarden/docs`**](https://github.com/routewarden/docs) (served at [routewarden.github.io/docs](https://routewarden.github.io/docs/)).
+
+When publishing minor or major versions, update the version registry in the docs repository to freeze historical version archives.
