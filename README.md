@@ -144,8 +144,9 @@ http:
 |---|---|---|---|
 | `enabled` | `bool` | `true` | Turn the middleware on or off. |
 | `enableDefaultPatterns` | `bool` | `true` | Block common sensitive files (`.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.log`, configs). |
+| `enableDefaultAllowPatterns` | `bool` | `true` | Enable built-in allowlist exemptions (`/robots.txt`, `/sitemap.xml`, `/.well-known/*`). |
 | `pathPatterns` | `[]string` | `[]` | Additional custom regex patterns to block (e.g. `['(?i)^/admin/.*']`). |
-| `allowPatterns` | `[]string` | `[...]` | Safe regex overrides (defaults: `/robots.txt`, `/ads.txt`, `/.well-known/*`). |
+| `allowPatterns` | `[]string` | `[]` | Custom safe regex overrides to always allow. |
 | `allowedIps` | `[]string` | `[]` | Whitelisted IPv4/IPv6 addresses or CIDR subnets (e.g. `127.0.0.1`, `10.0.0.0/8`). |
 | `checkQuery` | `bool` | `false` | Also inspect query parameters for blocked patterns. |
 | `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"captcha"`, `"redirect"`, or `"silentDrop"`. |

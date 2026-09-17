@@ -327,6 +327,40 @@ func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
 	}
 }
 
+func TestRouteWarden_DisableDefaultAllowPatterns(t *testing.T) {
+	// When EnableDefaultAllowPatterns is false, standard paths like /robots.txt or /security.txt
+	// that match a block rule will NOT be exempted.
+	cfg := routewarden.CreateConfig()
+	cfg.EnableDefaultAllowPatterns = false
+	// Block all .txt files
+	cfg.PathPatterns = []string{`(?i).*\.txt$`}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "disable-default-allow-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// /robots.txt matches .*\.txt$ and should be blocked because default allow patterns are disabled
+	req1 := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	rr1 := httptest.NewRecorder()
+	handler.ServeHTTP(rr1, req1)
+	if rr1.Code != http.StatusForbidden {
+		t.Errorf("expected /robots.txt to be blocked when EnableDefaultAllowPatterns=false, got %d", rr1.Code)
+	}
+
+	// /security.txt should also be blocked
+	req2 := httptest.NewRequest(http.MethodGet, "/security.txt", nil)
+	rr2 := httptest.NewRecorder()
+	handler.ServeHTTP(rr2, req2)
+	if rr2.Code != http.StatusForbidden {
+		t.Errorf("expected /security.txt to be blocked when EnableDefaultAllowPatterns=false, got %d", rr2.Code)
+	}
+}
+
 func TestRouteWarden_CheckQuery(t *testing.T) {
 	cfg := routewarden.CreateConfig()
 	cfg.CheckQuery = true
