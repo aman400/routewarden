@@ -21,7 +21,4 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Documentation & Node dependencies
-node_modules/
-docs/.vitepress/dist/
-docs/.vitepress/cache/
+
