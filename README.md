@@ -5,19 +5,19 @@
 </div>
 
 <p align="center">
-  <a href="https://github.com/aman400/routewarden/releases"><img src="https://img.shields.io/github/v/release/aman400/routewarden?color=blue" alt="GitHub Release" /></a>
-  <a href="https://github.com/aman400/routewarden/actions/workflows/ci.yml"><img src="https://github.com/aman400/routewarden/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status" /></a>
+  <a href="https://github.com/routewarden/traefik-warden/releases"><img src="https://img.shields.io/github/v/release/routewarden/traefik-warden?color=blue" alt="GitHub Release" /></a>
+  <a href="https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml"><img src="https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status" /></a>
   <a href="https://traefik.io"><img src="https://img.shields.io/badge/Traefik-v2.x%20%7C%20v3.x-24A1C1.svg?logo=traefik&logoColor=white" alt="Traefik Compatibility: v2.x | v3.x" /></a>
-  <a href="https://pkg.go.dev/github.com/aman400/routewarden"><img src="https://pkg.go.dev/badge/github.com/aman400/routewarden.svg" alt="Go Reference" /></a>
-  <a href="https://aman400.github.io/routewarden/guide/testing"><img src="https://img.shields.io/badge/Coverage-94.5%25-brightgreen.svg" alt="Test Coverage: 94.5%" /></a>
+  <a href="https://pkg.go.dev/github.com/routewarden/traefik-warden"><img src="https://pkg.go.dev/badge/github.com/routewarden/traefik-warden.svg" alt="Go Reference" /></a>
+  <a href="https://routewarden.github.io/guide/testing"><img src="https://img.shields.io/badge/Coverage-94.5%25-brightgreen.svg" alt="Test Coverage: 94.5%" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <a href="https://goreportcard.com/report/github.com/aman400/routewarden"><img src="https://goreportcard.com/badge/github.com/aman400/routewarden" alt="Go Report Card" /></a>
-  <a href="https://aman400.github.io/routewarden/"><img src="https://img.shields.io/badge/Docs-VitePress%20Wiki-6366f1.svg" alt="Documentation Site" /></a>
+  <a href="https://goreportcard.com/report/github.com/routewarden/traefik-warden"><img src="https://goreportcard.com/badge/github.com/routewarden/traefik-warden" alt="Go Report Card" /></a>
+  <a href="https://routewarden.github.io/"><img src="https://img.shields.io/badge/Docs-VitePress%20Wiki-6366f1.svg" alt="Documentation Site" /></a>
 </p>
 
 ---
 
-> 📖 **Full Documentation, Guides & Wiki**: [https://aman400.github.io/routewarden/](https://aman400.github.io/routewarden/)  
+> 📖 **Full Documentation, Guides & Wiki**: [https://routewarden.github.io/](https://routewarden.github.io/)  
 > 📂 **Runnable Scenarios**: [`examples/`](examples/) *(Docker Compose & Kubernetes CRDs)*
 
 ---
@@ -58,7 +58,7 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
-      - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+      - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
       - "--experimental.plugins.routewarden.version=v0.2.4"
     ports:
       - "80:80"
@@ -97,7 +97,7 @@ services:
 experimental:
   plugins:
     routewarden:
-      moduleName: github.com/aman400/routewarden
+      moduleName: github.com/routewarden/traefik-warden
       version: v0.2.4
 ```
 
@@ -155,27 +155,27 @@ http:
 | `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
 
-> 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://aman400.github.io/routewarden/reference/configuration)**.  
+> 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://routewarden.github.io/reference/configuration)**.  
 > ⚠️ **Note on `gzipBomb`**: Only attach this mode to confirmed exploit endpoints (`/.env`, `wp-login.php`, honeypots). Never attach it globally to public routes where legitimate search engine bots (Googlebot, Bingbot) or normal visitors could be impacted. Always keep `enableDefaultAllowPatterns: true` so `/robots.txt` is allowed.
 
 ---
 
 ## Documentation & Advanced Examples
 
-For in-depth setup guides, anti-evasion architecture, and ready-to-run blueprints, visit our **[Documentation Wiki](https://aman400.github.io/routewarden/)**:
+For in-depth setup guides, anti-evasion architecture, and ready-to-run blueprints, visit our **[Documentation Wiki](https://routewarden.github.io/)**:
 
-- 📖 **[Getting Started & Installation Guide](https://aman400.github.io/routewarden/guide/getting-started)**
-- 🏛️ **[System Architecture & Pipeline](https://aman400.github.io/routewarden/guide/architecture)**
-- 💻 **[Local Development & Testing Guide](https://aman400.github.io/routewarden/guide/local-deployment)**
-- 🧪 **[Automated Testing & Coverage Architecture](https://aman400.github.io/routewarden/guide/testing)**
-- ⚙️ **[Full Configuration Options Table](https://aman400.github.io/routewarden/reference/configuration)**
-- 🎭 **[Response Modes & Active Defense Guide](https://aman400.github.io/routewarden/reference/response-modes)**
-- 🎯 **[Custom Path Patterns & Regex Guide](https://aman400.github.io/routewarden/reference/custom-paths)**
-- 🛡️ **[Anti-Evasion Engine (Encoding, Matrix Params, Traversals)](https://aman400.github.io/routewarden/reference/anti-evasion)**
-- 🚀 **[Global EntryPoint Shield Cookbook](https://aman400.github.io/routewarden/examples/docker-compose-global)**
-- 🌐 **[IP & CIDR Subnet Whitelisting Cookbook](https://aman400.github.io/routewarden/examples/ip-whitelisting)**
-- 🤖 **[Cloudflare Turnstile & hCaptcha Challenges](https://aman400.github.io/routewarden/examples/captcha)**
-- ☸️ **[Kubernetes IngressRoute CRD Example](https://aman400.github.io/routewarden/examples/kubernetes)**
+- 📖 **[Getting Started & Installation Guide](https://routewarden.github.io/guide/getting-started)**
+- 🏛️ **[System Architecture & Pipeline](https://routewarden.github.io/guide/architecture)**
+- 💻 **[Local Development & Testing Guide](https://routewarden.github.io/guide/local-deployment)**
+- 🧪 **[Automated Testing & Coverage Architecture](https://routewarden.github.io/guide/testing)**
+- ⚙️ **[Full Configuration Options Table](https://routewarden.github.io/reference/configuration)**
+- 🎭 **[Response Modes & Active Defense Guide](https://routewarden.github.io/reference/response-modes)**
+- 🎯 **[Custom Path Patterns & Regex Guide](https://routewarden.github.io/reference/custom-paths)**
+- 🛡️ **[Anti-Evasion Engine (Encoding, Matrix Params, Traversals)](https://routewarden.github.io/reference/anti-evasion)**
+- 🚀 **[Global EntryPoint Shield Cookbook](https://routewarden.github.io/examples/docker-compose-global)**
+- 🌐 **[IP & CIDR Subnet Whitelisting Cookbook](https://routewarden.github.io/examples/ip-whitelisting)**
+- 🤖 **[Cloudflare Turnstile & hCaptcha Challenges](https://routewarden.github.io/examples/captcha)**
+- ☸️ **[Kubernetes IngressRoute CRD Example](https://routewarden.github.io/examples/kubernetes)**
 
 ---
 
@@ -185,7 +185,7 @@ RouteWarden maintains a comprehensive automated testing pipeline with **94.5% st
 
 | Test Suite | Scope | Command | CI Status |
 |---|---|---|---|
-| **Go Unit & Race Tests** | Core engine, IP CIDR filter, path normalization, response modes, and security evasion vectors | `npm run test:go` | [![CI](https://github.com/aman400/routewarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aman400/routewarden/actions/workflows/ci.yml) |
+| **Go Unit & Race Tests** | Core engine, IP CIDR filter, path normalization, response modes, and security evasion vectors | `npm run test:go` | [![CI](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml) |
 | **Node.js Scripts** | Version synchronization, semantic release tooling, and snapshot regression tests | `npm run test:scripts` | ✅ Verified |
 | **Documentation Build** | Full VitePress client/server bundle validation & broken link checks | `npm run docs:build` | ✅ Verified |
 | **All Test Suites** | Full regression and build verification | `npm run test:all` | ✅ 100% Pass |

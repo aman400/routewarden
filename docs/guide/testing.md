@@ -51,12 +51,12 @@ RouteWarden isolates unit testing per component and uses integration tests to va
 
 | Test File | Scope & Focus |
 |---|---|
-| [`config_test.go`](https://github.com/aman400/routewarden/blob/main/config_test.go) | Default settings, regex dictionaries, validation of `CreateConfig()` and factory defaults. |
-| [`path_normalizer_test.go`](https://github.com/aman400/routewarden/blob/main/path_normalizer_test.go) | Recursive URL unescaping (`%252e%252e`), semicolon matrix parameters (`/;param/.env`), Windows backslash normalization, and null byte injection attacks. |
-| [`ip_filter_test.go`](https://github.com/aman400/routewarden/blob/main/ip_filter_test.go) | Exact IPv4/IPv6 addresses, CIDR subnet matching, parsing `X-Forwarded-For`, `X-Real-IP`, and invalid IP syntax error handling. |
-| [`response_handler_test.go`](https://github.com/aman400/routewarden/blob/main/response_handler_test.go) | Custom JSON formatting, HTML templates, Turnstile/hCaptcha/reCAPTCHA markup generation, redirects, silent drops, and status codes. |
-| [`routewarden_test.go`](https://github.com/aman400/routewarden/blob/main/routewarden_test.go) | Middleware integration, default patterns, custom regex rules, allowlist overrides, query inspection, and disabled mode pass-through. |
-| [`integration_test.go`](https://github.com/aman400/routewarden/blob/main/integration_test.go) | Full multi-middleware pipeline simulation (`Tracing ➡️ RouteWarden ➡️ Upstream Backend Service`). |
+| [`config_test.go`](https://github.com/routewarden/traefik-warden/blob/main/config_test.go) | Default settings, regex dictionaries, validation of `CreateConfig()` and factory defaults. |
+| [`path_normalizer_test.go`](https://github.com/routewarden/traefik-warden/blob/main/path_normalizer_test.go) | Recursive URL unescaping (`%252e%252e`), semicolon matrix parameters (`/;param/.env`), Windows backslash normalization, and null byte injection attacks. |
+| [`ip_filter_test.go`](https://github.com/routewarden/traefik-warden/blob/main/ip_filter_test.go) | Exact IPv4/IPv6 addresses, CIDR subnet matching, parsing `X-Forwarded-For`, `X-Real-IP`, and invalid IP syntax error handling. |
+| [`response_handler_test.go`](https://github.com/routewarden/traefik-warden/blob/main/response_handler_test.go) | Custom JSON formatting, HTML templates, Turnstile/hCaptcha/reCAPTCHA markup generation, redirects, silent drops, and status codes. |
+| [`routewarden_test.go`](https://github.com/routewarden/traefik-warden/blob/main/routewarden_test.go) | Middleware integration, default patterns, custom regex rules, allowlist overrides, query inspection, and disabled mode pass-through. |
+| [`integration_test.go`](https://github.com/routewarden/traefik-warden/blob/main/integration_test.go) | Full multi-middleware pipeline simulation (`Tracing ➡️ RouteWarden ➡️ Upstream Backend Service`). |
 
 ---
 

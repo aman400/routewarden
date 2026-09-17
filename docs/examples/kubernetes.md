@@ -10,7 +10,7 @@ Ensure the plugin is enabled in Traefik's Helm chart values:
 
 ```yaml
 additionalArguments:
-  - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+  - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
   - "--experimental.plugins.routewarden.version={{version}}"
 ```
 

@@ -17,7 +17,7 @@ hero:
       link: /examples/overview
     - theme: alt
       text: View on GitHub
-      link: https://github.com/aman400/routewarden
+      link: https://github.com/routewarden/traefik-warden
 
 features:
   - icon: 🛡️

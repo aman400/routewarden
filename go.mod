@@ -1,3 +1,3 @@
-module github.com/aman400/routewarden
+module github.com/routewarden/traefik-warden
 
 go 1.21

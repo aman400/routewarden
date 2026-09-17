@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 // TestRouteWarden_E2E_Pipeline simulates a full Traefik pipeline with chained middleware,

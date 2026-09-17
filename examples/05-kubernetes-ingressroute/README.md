@@ -8,7 +8,7 @@ Deploy RouteWarden natively within Kubernetes clusters managed by the Traefik In
 2. Static plugin enabled in Traefik's Helm values or command args:
 ```yaml
 additionalArguments:
-  - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+  - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
   - "--experimental.plugins.routewarden.version=v0.2.4"
 ```
 

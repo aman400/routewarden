@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 func TestCreateConfig_Defaults(t *testing.T) {

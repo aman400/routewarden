@@ -42,6 +42,10 @@ The `v0.2.x` release series introduces CIDR/IP whitelisting, comprehensive anti-
   - **XML Error Output (`mode: xml`)**: Outputs structured `<Error><Status>403</Status><Message>...</Message></Error>` or custom SOAP Fault bodies for enterprise and legacy integrations.
   - **Forensic Transparent Reverse Proxy (`mode: proxy` / `mode: mirror`)**: Transparently reverse-proxies unauthorized requests into an internal canary/honeypot container (`proxyUrl`) via `httputil.NewSingleHostReverseProxy` without alerting the attacker with a 302 redirect.
   - **Infinite Garbage Stream (`mode: infiniteStream` / `mode: garbagestream`)**: Continuous high-speed streaming of pseudo-random bytes (`streamSizeMB: 50`) to exhaust crawler disk storage or crash unbuffered parsers.
+- **Official Repository Migration**:
+  - Moved official project ownership and repository location to [**`https://github.com/routewarden/traefik-warden`**](https://github.com/routewarden/traefik-warden).
+  - Updated Go module import path to `github.com/routewarden/traefik-warden`.
+  - Updated documentation URL to [`https://routewarden.github.io/`](https://routewarden.github.io/).
 - **Dedicated Response Modes Reference Guide (`docs/reference/response-modes.md`)**:
   - Comprehensive documentation covering all 13 response behaviors, threat model impact, operational considerations, crawler warnings, and configuration examples.
   - Integrated into top navigation and sidebar.
@@ -111,7 +115,7 @@ The `v0.2.x` release series introduces CIDR/IP whitelisting, comprehensive anti-
 
 #### Added
 - **Interactive Documentation & Wiki Site (VitePress)**:
-  - Official documentation site hosted on GitHub Pages ([`https://aman400.github.io/routewarden/`](https://aman400.github.io/routewarden/)).
+  - Official documentation site hosted on GitHub Pages ([`https://routewarden.github.io/`](https://routewarden.github.io/)).
   - Client-side full-text search, dark/light theme, and synchronized multi-format code previews (YAML, TOML, CLI).
   - Version switching across documentation branches (`v0.2.x` and `v0.1.x`).
 - **In-Repo Examples Suite (`examples/`)**:

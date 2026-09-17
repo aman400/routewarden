@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 func TestRouteWarden_Defaults(t *testing.T) {

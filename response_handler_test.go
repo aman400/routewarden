@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 func TestResponseHandler_JSON(t *testing.T) {

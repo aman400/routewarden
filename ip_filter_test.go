@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 func TestIPFilter_Unit(t *testing.T) {

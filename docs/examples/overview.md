@@ -32,10 +32,10 @@ Browse ready-to-run configurations and production blueprints for RouteWarden acr
 
 ## In-Repo Runnable Code
 
-All examples are checked directly into the [`examples/`](https://github.com/aman400/routewarden/tree/main/examples) directory of the RouteWarden GitHub repository. You can clone the repo and run any scenario in seconds:
+All examples are checked directly into the [`examples/`](https://github.com/routewarden/traefik-warden/tree/main/examples) directory of the RouteWarden GitHub repository. You can clone the repo and run any scenario in seconds:
 
 ```bash
-git clone https://github.com/aman400/routewarden.git
+git clone https://github.com/routewarden/traefik-warden.git
 cd routewarden/examples/01-basic-sensitive-files
 docker compose up -d
 ```
