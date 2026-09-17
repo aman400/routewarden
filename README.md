@@ -32,12 +32,13 @@
 
 ## What is RouteWarden?
 
-**RouteWarden** is a lightweight Traefik middleware written in pure Go (with zero external dependencies) that intercepts and blocks requests before they reach your backend:
+**RouteWarden** is a lightweight Traefik middleware written in pure Go (with zero external dependencies) that intercepts malicious reconnaissance probing, sensitive file exposure, and automated bot scans before requests ever reach your backend:
 
-- 🛡️ **Zero-Config Defense**: Blocks `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, logs, and debug endpoints.
-- ⚡ **Anti-Evasion**: Normalizes double-URL encoding (`%252e%252e`), semicolon matrix params (`/;param/.env`), and Windows backslashes (`\`).
-- 🌐 **IP & CIDR Whitelist**: Bypass blocking for corporate VPNs, office IPs, or developer subnets (`10.0.0.0/8`).
-- 🎭 **Flexible Responses**: Return custom **404 Not Found**, **403 Forbidden**, custom JSON, HTML, **302 Redirect**, or interactive **Turnstile / hCaptcha / reCAPTCHA** challenges.
+- 🛡️ **Anti-Probing & Scanner Defense**: Instantly halts automated web vulnerability scanners and bots probing for exposed secrets, configuration files, and unprotected admin interfaces.
+- 📁 **Zero-Config File Guard**: Out-of-the-box blocking for `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, server logs, and debug endpoints.
+- ⚡ **Anti-Evasion Engine**: Normalizes multi-layer URL encoding (`%252e%252e`), semicolon matrix parameters (`/;param/.env`), Windows backslashes (`\`), and null bytes.
+- 🌐 **IP & CIDR Whitelist**: Bypass blocking for corporate VPNs, office IPs, or developer subnets (`10.0.0.0/8`, `100.64.0.0/10`).
+- 🎭 **Flexible Responses**: Neutralize probe attempts with standard **404 Not Found** (making endpoints appear non-existent), **403 Forbidden**, custom JSON, HTML, honeypot **Redirects**, or interactive **Turnstile / hCaptcha** challenges.
 
 ---
 

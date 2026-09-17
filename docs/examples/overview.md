@@ -14,6 +14,7 @@ Browse ready-to-run configurations and production blueprints for RouteWarden acr
 | [4. IP / Subnet Whitelisting](/examples/ip-whitelisting) | Allow internal corporate VPNs, office IPs, and developer subnets. | Docker Compose / Traefik |
 | [5. Captcha Verification Challenge](/examples/captcha) | Challenge clients via Cloudflare Turnstile or hCaptcha on sensitive routes. | Docker Compose / Traefik |
 | [6. Kubernetes IngressRoute](/examples/kubernetes) | Production IngressRoute and Middleware CRD setup for Traefik Kubernetes. | Kubernetes CRD |
+| [💡 Case Study: Dual-Router Shield (Immich)](/examples/case-study-immich) | Public photo/video sharing with blocked admin/login endpoints and private VPN router. | Production Architecture |
 
 ---
 

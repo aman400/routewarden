@@ -568,3 +568,86 @@ func TestRouteWarden_InvalidAllowedIPs(t *testing.T) {
 	}
 }
 
+func TestRouteWarden_WildcardAndPrefixPatterns(t *testing.T) {
+	cfg := routewarden.CreateConfig()
+	cfg.EnableDefaultPatterns = false
+	// Real-world API wildcard and prefix patterns (like Immich, admin dashboards, etc.)
+	cfg.PathPatterns = []string{
+		`(?i)^/api/auth/login.*$`,
+		`(?i)^/api/auth/admin-sign-up.*$`,
+		`(?i)^/api/users.*$`,
+		`(?i)^/api/admin.*$`,
+		`(?i)^/api/server-info/stats.*$`,
+		`(?i)^/internal/.*`,
+	}
+	cfg.Response = &routewarden.ResponseConfig{
+		Mode:       "json",
+		StatusCode: http.StatusNotFound,
+		Body:       `{"error":"Not Found"}`,
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true}`))
+	})
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "wildcard-test")
+	if err != nil {
+		t.Fatalf("failed to create handler: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		path         string
+		expectedCode int
+	}{
+		// Blocked by ^/api/auth/login.*$
+		{"Exact login endpoint", "/api/auth/login", http.StatusNotFound},
+		{"Login endpoint with trailing slash", "/api/auth/login/", http.StatusNotFound},
+		{"Login endpoint with subpath", "/api/auth/login/oauth", http.StatusNotFound},
+		{"Login endpoint with query", "/api/auth/login?redirect=/home", http.StatusNotFound},
+		{"Uppercase login", "/API/AUTH/LOGIN", http.StatusNotFound},
+
+		// Blocked by ^/api/auth/admin-sign-up.*$
+		{"Admin sign up exact", "/api/auth/admin-sign-up", http.StatusNotFound},
+		{"Admin sign up subpath", "/api/auth/admin-sign-up/submit", http.StatusNotFound},
+
+		// Blocked by ^/api/users.*$
+		{"Users root", "/api/users", http.StatusNotFound},
+		{"Users specific ID", "/api/users/123", http.StatusNotFound},
+		{"Users profile", "/api/users/me/profile", http.StatusNotFound},
+
+		// Blocked by ^/api/admin.*$
+		{"Admin root", "/api/admin", http.StatusNotFound},
+		{"Admin settings", "/api/admin/settings/security", http.StatusNotFound},
+
+		// Blocked by ^/api/server-info/stats.*$
+		{"Server stats", "/api/server-info/stats", http.StatusNotFound},
+		{"Server stats detail", "/api/server-info/stats/cpu", http.StatusNotFound},
+
+		// Blocked by ^/internal/.*
+		{"Internal endpoint", "/internal/metrics", http.StatusNotFound},
+
+		// Allowed public endpoints (should pass through to next with 200 OK)
+		{"Public share link", "/share/Hj89aLm1", http.StatusOK},
+		{"Public asset thumbnail", "/api/asset/thumbnail/456", http.StatusOK},
+		{"Public photo view", "/api/asset/file/789", http.StatusOK},
+		{"Other non-matching auth", "/api/auth/logout", http.StatusOK},
+		{"Server info other than stats", "/api/server-info/version", http.StatusOK},
+		{"Static assets", "/favicon.ico", http.StatusOK},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			if rr.Code != tc.expectedCode {
+				t.Errorf("Path %q: expected status %d, got %d", tc.path, tc.expectedCode, rr.Code)
+			}
+		})
+	}
+}
+

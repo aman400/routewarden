@@ -21,8 +21,8 @@ hero:
 
 features:
   - icon: 🛡️
-    title: Zero-Config Sensitive File Blocking
-    details: Automatically guards against unauthorized access to .env, .git, .aws, backups (.sql, .bak), config files (.yaml, .ini), logs, and debug endpoints.
+    title: Anti-Probing & Scanner Defense
+    details: Automatically intercepts automated bots and vulnerability crawlers probing for exposed credentials, backups, and administrative endpoints.
   - icon: ⚡
     title: Advanced Anti-Evasion Engine
     details: Defeats multi-layer URL encoding, directory traversal (../), IIS backslashes (\), semicolon matrix parameters, and null byte injections.
@@ -42,9 +42,9 @@ features:
 
 ## What is RouteWarden?
 
-**RouteWarden** is an ultra-fast, zero-dependency Traefik middleware plugin built in pure Go. It acts as an **in-line security shield** deployed at your edge router or ingress controller, safeguarding downstream microservices and web applications from accidental sensitive data exposure, reconnaissance scanners, and path evasion attacks.
+**RouteWarden** is an ultra-fast, zero-dependency Traefik middleware plugin built in pure Go. It acts as an **in-line security shield** deployed at your edge router or ingress controller, safeguarding downstream microservices and web applications from **reconnaissance probing**, accidental sensitive data exposure, and path evasion attacks.
 
-Every day, automated bots and vulnerability scanners probe web servers for `.env` files, `.git` credential databases, database backups, admin consoles, and leaked cloud credentials. RouteWarden intercepts and neutralizes these requests at the Traefik proxy layer **before they ever hit your upstream containers**.
+Every internet-connected IP is continuously bombarded by automated crawlers, Shodan/Censys scanners, and credential-harvesting bots searching for `.env` files, `.git` credential databases, database backups, admin consoles, and leaked cloud credentials. RouteWarden intercepts and neutralizes these probing attempts at the Traefik proxy layer **before they ever hit your upstream containers or touch your backend logs**.
 
 ---
 
@@ -208,9 +208,27 @@ http:
 
 ---
 
+## Featured Case Study: Dual-Router Security (Immich)
+
+Want to share self-hosted photos or media publicly without exposing administrative or authentication interfaces?
+
+With RouteWarden, you can deploy **two Traefik routers pointing to the same upstream application**:
+1. **Private Router (over VPN / LAN)**: Full access to all endpoints, user management, and administrative dashboards.
+2. **Public Router (Internet)**: Exposes public photo/album sharing (`/share/*`), while **RouteWarden intercepts and blocks** critical sensitive APIs:
+   - `^/api/auth/login.*$` *(prevents credential stuffing)*
+   - `^/api/auth/admin-sign-up.*$` *(prevents unauthorized account creation)*
+   - `^/api/users.*$` *(prevents user enumeration)*
+   - `^/api/admin.*$` *(prevents administrative tampering)*
+   - `^/api/server-info/stats.*$` *(prevents topology reconnaissance)*
+
+👉 **[Read the Full Immich Dual-Router Case Study ➔](/examples/case-study-immich)**
+
+---
+
 ## Ready to Explore?
 
 - Check out the [Getting Started Guide](/guide/getting-started) for step-by-step installation instructions.
 - Learn about the [System Architecture](/guide/architecture) and how RouteWarden processes requests.
 - Explore the [Examples Cookbook](/examples/overview) for Docker Compose and Kubernetes manifests.
+- Read the [Dual-Router Case Study](/examples/case-study-immich) for practical production shielding.
 - Read the [Anti-Evasion Security Deep Dive](/reference/anti-evasion) for security test results.
