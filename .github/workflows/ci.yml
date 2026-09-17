@@ -1,14 +1,10 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - develop
   pull_request:
     branches:
-      - main
       - develop
+      - main
   workflow_dispatch:
 
 # Prevents redundant builds: cancel previous runs on the same branch or PR
