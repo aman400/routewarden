@@ -6,8 +6,10 @@
 
 <p align="center">
   <a href="https://github.com/aman400/routewarden/releases"><img src="https://img.shields.io/github/v/release/aman400/routewarden?color=blue" alt="GitHub Release" /></a>
+  <a href="https://github.com/aman400/routewarden/actions/workflows/ci.yml"><img src="https://github.com/aman400/routewarden/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status" /></a>
   <a href="https://traefik.io"><img src="https://img.shields.io/badge/Traefik-v2.x%20%7C%20v3.x-24A1C1.svg?logo=traefik&logoColor=white" alt="Traefik Compatibility: v2.x | v3.x" /></a>
   <a href="https://pkg.go.dev/github.com/aman400/routewarden"><img src="https://pkg.go.dev/badge/github.com/aman400/routewarden.svg" alt="Go Reference" /></a>
+  <a href="https://aman400.github.io/routewarden/guide/testing"><img src="https://img.shields.io/badge/Coverage-94.5%25-brightgreen.svg" alt="Test Coverage: 94.5%" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
   <a href="https://goreportcard.com/report/github.com/aman400/routewarden"><img src="https://goreportcard.com/badge/github.com/aman400/routewarden" alt="Go Report Card" /></a>
   <a href="https://aman400.github.io/routewarden/"><img src="https://img.shields.io/badge/Docs-VitePress%20Wiki-6366f1.svg" alt="Documentation Site" /></a>
@@ -57,7 +59,7 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
-      - "--experimental.plugins.routewarden.version=v0.2.3"
+      - "--experimental.plugins.routewarden.version=v0.2.4"
     ports:
       - "80:80"
     volumes:
@@ -96,7 +98,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/aman400/routewarden
-      version: v0.2.3
+      version: v0.2.4
 ```
 
 #### 2. Dynamic Configuration (`dynamic_conf.yml`)
@@ -149,7 +151,7 @@ http:
 | `allowPatterns` | `[]string` | `[]` | Custom safe regex overrides to always allow. |
 | `allowedIps` | `[]string` | `[]` | Whitelisted IPv4/IPv6 addresses or CIDR subnets (e.g. `127.0.0.1`, `10.0.0.0/8`). |
 | `checkQuery` | `bool` | `false` | Also inspect query parameters for blocked patterns. |
-| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"captcha"`, `"redirect"`, `"silentDrop"`, or `"gzipBomb"`. |
+| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"xml"`, `"captcha"`, `"redirect"`, `"proxy"`, `"silentDrop"`, `"gzipBomb"`, `"tarpit"`, `"fakeSuccess"`, `"rateLimitChallenge"`, or `"infiniteStream"`. |
 | `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
 
@@ -167,6 +169,7 @@ For in-depth setup guides, anti-evasion architecture, and ready-to-run blueprint
 - 💻 **[Local Development & Testing Guide](https://aman400.github.io/routewarden/guide/local-deployment)**
 - 🧪 **[Automated Testing & Coverage Architecture](https://aman400.github.io/routewarden/guide/testing)**
 - ⚙️ **[Full Configuration Options Table](https://aman400.github.io/routewarden/reference/configuration)**
+- 🎭 **[Response Modes & Active Defense Guide](https://aman400.github.io/routewarden/reference/response-modes)**
 - 🎯 **[Custom Path Patterns & Regex Guide](https://aman400.github.io/routewarden/reference/custom-paths)**
 - 🛡️ **[Anti-Evasion Engine (Encoding, Matrix Params, Traversals)](https://aman400.github.io/routewarden/reference/anti-evasion)**
 - 🚀 **[Global EntryPoint Shield Cookbook](https://aman400.github.io/routewarden/examples/docker-compose-global)**
@@ -175,6 +178,25 @@ For in-depth setup guides, anti-evasion architecture, and ready-to-run blueprint
 - ☸️ **[Kubernetes IngressRoute CRD Example](https://aman400.github.io/routewarden/examples/kubernetes)**
 
 ---
+
+## Testing & Quality Assurance
+
+RouteWarden maintains a comprehensive automated testing pipeline with **94.5% statement test coverage** and automated data race detection:
+
+| Test Suite | Scope | Command | CI Status |
+|---|---|---|---|
+| **Go Unit & Race Tests** | Core engine, IP CIDR filter, path normalization, response modes, and security evasion vectors | `npm run test:go` | [![CI](https://github.com/aman400/routewarden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aman400/routewarden/actions/workflows/ci.yml) |
+| **Node.js Scripts** | Version synchronization, semantic release tooling, and snapshot regression tests | `npm run test:scripts` | ✅ Verified |
+| **Documentation Build** | Full VitePress client/server bundle validation & broken link checks | `npm run docs:build` | ✅ Verified |
+| **All Test Suites** | Full regression and build verification | `npm run test:all` | ✅ 100% Pass |
+
+```bash
+# Run all tests locally
+npm run test:all
+
+# Run statement coverage breakdown
+npm run test:coverage
+```
 
 ## License
 

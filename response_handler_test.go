@@ -2,11 +2,15 @@ package routewarden_test
 
 import (
 	"compress/gzip"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aman400/routewarden"
 )
@@ -307,6 +311,352 @@ func TestResponseHandler_GzipBomb(t *testing.T) {
 	}
 	if rrCustom.Header().Get("Content-Type") != "text/plain" {
 		t.Errorf("expected text/plain Content-Type, got %s", rrCustom.Header().Get("Content-Type"))
+	}
+}
+
+func TestResponseHandler_XML(t *testing.T) {
+	// Default XML
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:       "xml",
+		StatusCode: http.StatusForbidden,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/endpoint", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected %d, got %d", http.StatusForbidden, rr.Code)
+	}
+	if !strings.Contains(rr.Header().Get("Content-Type"), "application/xml") {
+		t.Errorf("expected application/xml content-type")
+	}
+	if !strings.Contains(rr.Body.String(), "<Error>") || !strings.Contains(rr.Body.String(), "<Status>403</Status>") {
+		t.Errorf("unexpected xml body: %s", rr.Body.String())
+	}
+
+	// Custom XML body
+	handlerCustom, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:       "xml",
+		StatusCode: http.StatusUnauthorized,
+		Body:       "<soap:Fault><faultcode>Client</faultcode></soap:Fault>",
+	}, 0, "", false)
+	rrCustom := httptest.NewRecorder()
+	handlerCustom.ServeBlockedRequest(rrCustom, req)
+	if !strings.Contains(rrCustom.Body.String(), "<soap:Fault>") {
+		t.Errorf("expected custom XML fault body")
+	}
+}
+
+func TestResponseHandler_RateLimitChallenge(t *testing.T) {
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:              "rateLimitChallenge",
+		RetryAfterSeconds: 600,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusTooManyRequests {
+		t.Errorf("expected 429, got %d", rr.Code)
+	}
+	if rr.Header().Get("Retry-After") != "600" {
+		t.Errorf("expected Retry-After: 600, got %s", rr.Header().Get("Retry-After"))
+	}
+	if !strings.Contains(rr.Body.String(), `"retryAfter":600`) {
+		t.Errorf("unexpected body: %s", rr.Body.String())
+	}
+}
+
+func TestResponseHandler_FakeSuccessDecoy(t *testing.T) {
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode: "fakeSuccess",
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Test .env synthetic response
+	reqEnv := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrEnv := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rrEnv, reqEnv)
+	if rrEnv.Code != http.StatusOK {
+		t.Errorf("expected 200 OK for decoy")
+	}
+	if !strings.Contains(rrEnv.Body.String(), "APP_NAME=Laravel") || !strings.Contains(rrEnv.Body.String(), "DB_PASSWORD=") {
+		t.Errorf("expected synthetic .env body, got: %s", rrEnv.Body.String())
+	}
+
+	// Test actuator health decoy
+	reqActuator := httptest.NewRequest(http.MethodGet, "/actuator/health", nil)
+	rrActuator := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rrActuator, reqActuator)
+	if !strings.Contains(rrActuator.Body.String(), `"status":"UP"`) {
+		t.Errorf("expected actuator decoy, got: %s", rrActuator.Body.String())
+	}
+
+	// Test git/HEAD decoy
+	reqGit := httptest.NewRequest(http.MethodGet, "/.git/HEAD", nil)
+	rrGit := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rrGit, reqGit)
+	if !strings.Contains(rrGit.Body.String(), "ref: refs/heads/master") {
+		t.Errorf("expected git decoy, got: %s", rrGit.Body.String())
+	}
+
+	// Test phpinfo decoy
+	reqPHP := httptest.NewRequest(http.MethodGet, "/phpinfo.php", nil)
+	rrPHP := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rrPHP, reqPHP)
+	if !strings.Contains(rrPHP.Body.String(), "phpinfo()") {
+		t.Errorf("expected phpinfo decoy, got: %s", rrPHP.Body.String())
+	}
+
+	// Test wp-login decoy
+	reqWP := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	rrWP := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rrWP, reqWP)
+	if !strings.Contains(rrWP.Body.String(), "WordPress") {
+		t.Errorf("expected wp-login decoy, got: %s", rrWP.Body.String())
+	}
+
+	// Test generic route decoy
+	reqGeneric := httptest.NewRequest(http.MethodGet, "/api/something", nil)
+	rrGeneric := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rrGeneric, reqGeneric)
+	if !strings.Contains(rrGeneric.Body.String(), `"status":"success"`) {
+		t.Errorf("expected generic success decoy")
+	}
+}
+
+func TestResponseHandler_Proxy(t *testing.T) {
+	// 1. Test Proxy handler with custom RoundTripper so it doesn't need to bind network ports in sandbox
+	targetURL, _ := url.Parse("http://honeypot.local")
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+
+	type testTransport struct{}
+	proxy.Transport = roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		rec := httptest.NewRecorder()
+		rec.Header().Set("X-Honeypot-Captured", "true")
+		rec.WriteHeader(http.StatusTeapot)
+		_, _ = rec.WriteString("honeypot-captured")
+		resp := rec.Result()
+		resp.Request = req
+		return resp, nil
+	})
+
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:     "proxy",
+		ProxyURL: "http://honeypot.local",
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Inject test proxy
+	handler.SetProxyHandlerForTest(proxy)
+
+	req := httptest.NewRequest(http.MethodGet, "/probe", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusTeapot {
+		t.Errorf("expected %d from honeypot backend, got %d", http.StatusTeapot, rr.Code)
+	}
+	if rr.Header().Get("X-Honeypot-Captured") != "true" {
+		t.Errorf("expected proxy header")
+	}
+	if !strings.Contains(rr.Body.String(), "honeypot-captured") {
+		t.Errorf("expected honeypot body")
+	}
+
+	// 2. Test invalid proxy URL error
+	_, errInvalid := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:     "proxy",
+		ProxyURL: "://invalid-url",
+	}, 0, "", false)
+	if errInvalid == nil {
+		t.Errorf("expected error for invalid proxy URL")
+	}
+
+	// 3. Test empty proxy fallback
+	handlerEmpty, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode: "proxy",
+	}, 0, "", false)
+	rrEmpty := httptest.NewRecorder()
+	handlerEmpty.ServeBlockedRequest(rrEmpty, req)
+	if rrEmpty.Code != http.StatusBadGateway {
+		t.Errorf("expected 502 for unconfigured proxy, got %d", rrEmpty.Code)
+	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestResponseHandler_InfiniteStream(t *testing.T) {
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:         "infiniteStream",
+		StatusCode:   http.StatusOK,
+		StreamSizeMB: 1, // 1MB in test
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/probe", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+	if rr.Body.Len() < 1024*1024 {
+		t.Errorf("expected at least 1MB garbage stream, got %d bytes", rr.Body.Len())
+	}
+}
+
+func TestResponseHandler_Tarpit(t *testing.T) {
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:                     "tarpit",
+		StatusCode:               http.StatusOK,
+		TarpitDelayMs:           5,  // Fast delay for testing
+		TarpitMaxDurationSeconds: 1,  // 1 second max
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Test context cancellation exits cleanly
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	req := httptest.NewRequest(http.MethodGet, "/probe", nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+
+	// Test tarpit natural timeout branch
+	handlerTimeout, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:                     "tarpit",
+		TarpitDelayMs:           5,
+		TarpitMaxDurationSeconds: 1, // 1 second timeout
+	}, 0, "", false)
+	reqTimeout := httptest.NewRequest(http.MethodGet, "/probe", nil)
+	rrTimeout := httptest.NewRecorder()
+	handlerTimeout.ServeBlockedRequest(rrTimeout, reqTimeout)
+	if rrTimeout.Code != http.StatusForbidden {
+		t.Errorf("expected default 403 for tarpit without explicit code")
+	}
+}
+
+func TestResponseHandler_EdgeCases(t *testing.T) {
+	// 1. Custom Body & Status for FakeSuccess
+	handlerCustomDecoy, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:        "fakeSuccess",
+		StatusCode:  http.StatusAccepted,
+		ContentType: "application/json",
+		Body:        `{"custom":"decoy_payload"}`,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	reqDecoy := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrDecoy := httptest.NewRecorder()
+	handlerCustomDecoy.ServeBlockedRequest(rrDecoy, reqDecoy)
+	if rrDecoy.Code != http.StatusAccepted {
+		t.Errorf("expected status 202, got %d", rrDecoy.Code)
+	}
+	if !strings.Contains(rrDecoy.Body.String(), `"custom":"decoy_payload"`) {
+		t.Errorf("expected custom decoy payload")
+	}
+
+	// 2. Redirect without code (should default to 302 Found)
+	handlerRedir, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:        "redirect",
+		RedirectURL: "https://example.com/honeypot",
+		StatusCode:  200, // Invalid redirect code should fallback to 302
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rrRedir := httptest.NewRecorder()
+	handlerRedir.ServeBlockedRequest(rrRedir, reqDecoy)
+	if rrRedir.Code != http.StatusFound {
+		t.Errorf("expected fallback to 302 Found, got %d", rrRedir.Code)
+	}
+
+	// 3. Redirect without redirectURL (should default to "/")
+	handlerRedirDefault, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode: "redirect",
+	}, 0, "", false)
+	rrRedirDefault := httptest.NewRecorder()
+	handlerRedirDefault.ServeBlockedRequest(rrRedirDefault, reqDecoy)
+	if rrRedirDefault.Header().Get("Location") != "/" {
+		t.Errorf("expected Location: /, got %s", rrRedirDefault.Header().Get("Location"))
+	}
+
+	// 4. RateLimitChallenge with custom body and status code
+	handlerRL, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:              "rateLimit",
+		StatusCode:        http.StatusTooManyRequests,
+		RetryAfterSeconds: 120,
+		ContentType:       "text/plain",
+		Body:              "Calm down bot",
+	}, 0, "", false)
+	rrRL := httptest.NewRecorder()
+	handlerRL.ServeBlockedRequest(rrRL, reqDecoy)
+	if rrRL.Header().Get("Retry-After") != "120" {
+		t.Errorf("expected Retry-After: 120, got %s", rrRL.Header().Get("Retry-After"))
+	}
+	if !strings.Contains(rrRL.Body.String(), "Calm down bot") {
+		t.Errorf("expected custom rate limit body")
+	}
+
+	// 5. XML with custom content type and status code
+	handlerXML, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:        "xml",
+		StatusCode:  http.StatusPaymentRequired,
+		ContentType: "application/soap+xml",
+	}, 0, "", false)
+	rrXML := httptest.NewRecorder()
+	handlerXML.ServeBlockedRequest(rrXML, reqDecoy)
+	if rrXML.Code != http.StatusPaymentRequired {
+		t.Errorf("expected 402, got %d", rrXML.Code)
+	}
+	if rrXML.Header().Get("Content-Type") != "application/soap+xml" {
+		t.Errorf("expected custom xml content type")
+	}
+
+	// 6. InfiniteStream default fallback size (<=0 MB defaults to 50MB in production, tested with 0)
+	handlerStreamZero, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:         "infiniteStream",
+		StreamSizeMB: -1,
+	}, 0, "", false)
+	if handlerStreamZero == nil {
+		t.Errorf("failed creating infiniteStream handler")
+	}
+
+	// 7. GzipBomb with 0 MB defaults
+	handlerBombZero, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:       "gzipBomb",
+		GzipBombMB: 0,
+	}, 0, "", false)
+	rrBombZero := httptest.NewRecorder()
+	handlerBombZero.ServeBlockedRequest(rrBombZero, reqDecoy)
+	if rrBombZero.Header().Get("Content-Encoding") != "gzip" {
+		t.Errorf("expected gzip encoding")
 	}
 }
 

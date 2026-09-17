@@ -122,10 +122,17 @@ When a sensitive route is intercepted, you decide how Traefik responds to the cl
 
 - **`json`**: Return clean JSON payloads with customizable status codes (e.g. `403 Forbidden` or `404 Not Found`) and custom error messages.
 - **`html`**: Render branded warning or company error pages with embedded styling.
+- **`text`**: Emit lightweight plain-text error messages.
+- **`xml`**: Output standard XML formatted error bodies (`<Error><Status>403</Status>...</Error>`) for SOAP and enterprise services.
 - **`captcha`**: Present human verification challenges using **Cloudflare Turnstile**, **hCaptcha**, or **Google reCAPTCHA** without needing any backend captcha server.
-- **`redirect`**: Silently deflect attackers to a honeypot, logging sink, or warning site.
+- **`redirect`**: Silently deflect attackers to an external honeypot, logging sink, or warning site.
 - **`silentDrop`**: Close the TCP connection immediately without emitting any response payload to confuse automated port scanners.
 - **`gzipBomb`** *(alias: `bomb`)*: Stream compressed zero-byte blocks that expand ~1000× (e.g. 10 MB expands to ~10 GB in client RAM) with negligible server bandwidth, forcing memory exhaustion (OOM) on vulnerability crawlers (`nikto`, `gobuster`, `dirsearch`).
+- **`tarpit`**: Reverse Slowloris defense that trickles individual bytes at slow intervals to tie up scanner socket pools and concurrency workers for minutes.
+- **`fakeSuccess`** *(alias: `decoy`)*: Return realistic synthetic honeypot data (`.env` credentials, mock Spring Actuator metrics, dummy `git/HEAD`, fake `wp-login`) to fool attackers and log early warning telemetry.
+- **`rateLimitChallenge`** *(alias: `ratelimit`)*: Issue an HTTP `429 Too Many Requests` with a compliant `Retry-After` header to force automated scrapers to back off.
+- **`proxy`** *(alias: `mirror`)*: Transparently reverse-proxy probing traffic to an internal forensics/canary container without tipping off the attacker with a 302 redirect.
+- **`infiniteStream`** *(alias: `garbagestream`)*: Stream endless chunks of pseudo-random data to fill client disks and crash parsing buffers.
 
 <div class="bomb-callout">
   <div class="bomb-callout-header">

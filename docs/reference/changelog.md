@@ -27,10 +27,32 @@ The `v0.2.x` release series introduces CIDR/IP whitelisting, comprehensive anti-
 |---|---|---|---|
 | **IP / CIDR Whitelisting** | ❌ Not available | ✅ **`allowedIps`** | Whitelist IPs or subnets (e.g. `10.0.0.0/8`, `192.168.1.100`) to bypass blocking. |
 | **Client IP Resolution** | ❌ None | ✅ **`X-Forwarded-For` & `X-Real-IP`** | Accurately tracks origin IP through reverse proxies and load balancers. |
-| **Response Modes** | `json`, `html`, `text`, `redirect` | `json`, `html`, `text`, `redirect`, **`captcha`**, **`silentDrop`** | Fully integrated Cloudflare Turnstile & hCaptcha challenge templates. |
+| **Response Modes** | `json`, `html`, `text`, `redirect` | `json`, `html`, `text`, `xml`, `redirect`, `captcha`, `silentDrop`, `gzipBomb`, `tarpit`, `fakeSuccess`, `rateLimitChallenge`, `proxy`, `infiniteStream` | 13 deterministic error, challenge, deception, and active defense modes. |
 | **Path Anti-Evasion** | Basic URL decode | Multi-layer decode, dot-segment traversal, IIS backslash & matrix param scrubbing | Neutralizes `%252e%252e`, `/;param/.env`, and `\\` evasion vectors. |
-| **Test Suite Coverage** | ~60% basic tests | **92.6% statement coverage** | Per-component isolation tests with Yaegi conformance and race detection. |
+| **Test Suite Coverage** | ~60% basic tests | **94.5% statement coverage** | Isolated unit suites, race detection, and full edge case verification. |
 | **Documentation** | Readme only | Interactive VitePress Wiki + Version Switching | Live searchable documentation with unified code tabs and live examples. |
+
+### [v0.2.4] - 2026-09-17
+
+#### Added
+- **Multi-Mode Response Engine Expansion (13 Distinct Modes)**:
+  - **Reverse Slowloris Tarpit (`mode: tarpit`)**: Stalls bot connections by trickling bytes at configurable intervals (`tarpitDelayMs: 1000`, `tarpitMaxDurationSeconds: 60`), tying up crawler socket and thread pools.
+  - **Synthetic Honeypot Deception (`mode: fakeSuccess` / `mode: decoy`)**: Serves convincing mock payloads (`.env` credentials, Spring Actuator health JSON, dummy `git/HEAD`, fake `wp-login.php`, or sanitized PHP info) to bait scanners into reporting false positives and wasting attacker resources.
+  - **Rate Limit Backoff Challenge (`mode: rateLimitChallenge` / `mode: ratelimit`)**: Returns HTTP `429 Too Many Requests` with a compliant `Retry-After: <seconds>` header (`retryAfterSeconds: 300`) to instruct polite crawlers to back off.
+  - **XML Error Output (`mode: xml`)**: Outputs structured `<Error><Status>403</Status><Message>...</Message></Error>` or custom SOAP Fault bodies for enterprise and legacy integrations.
+  - **Forensic Transparent Reverse Proxy (`mode: proxy` / `mode: mirror`)**: Transparently reverse-proxies unauthorized requests into an internal canary/honeypot container (`proxyUrl`) via `httputil.NewSingleHostReverseProxy` without alerting the attacker with a 302 redirect.
+  - **Infinite Garbage Stream (`mode: infiniteStream` / `mode: garbagestream`)**: Continuous high-speed streaming of pseudo-random bytes (`streamSizeMB: 50`) to exhaust crawler disk storage or crash unbuffered parsers.
+- **Dedicated Response Modes Reference Guide (`docs/reference/response-modes.md`)**:
+  - Comprehensive documentation covering all 13 response behaviors, threat model impact, operational considerations, crawler warnings, and configuration examples.
+  - Integrated into top navigation and sidebar.
+- **Automated GitHub Actions CI Workflow (`.github/workflows/ci.yml`)**:
+  - Go test matrix running with data race detection (`go test -v -race ./...`) across Go 1.21, 1.22, and 1.23.
+  - Node.js script testing, docs build verification, and step summary generation for PR status enforcement.
+
+#### Changed
+- Increased statement test coverage to **94.5%** with comprehensive unit and edge case tests across all response modes.
+
+---
 
 ### [v0.2.3] - 2026-09-17
 

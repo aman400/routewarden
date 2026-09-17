@@ -54,6 +54,7 @@ export default defineConfig({
         activeMatch: '^/reference/',
         items: [
           { text: 'Configuration Options', link: '/reference/configuration' },
+          { text: 'Response Modes Engine', link: '/reference/response-modes' },
           { text: 'Custom Path Patterns', link: '/reference/custom-paths' },
           { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' },
           { text: 'Changelog & Migrations', link: '/reference/changelog' }
@@ -99,6 +100,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Configuration Reference', link: '/reference/configuration' },
+            { text: 'Response Modes Engine', link: '/reference/response-modes' },
             { text: 'Custom Path Patterns', link: '/reference/custom-paths' },
             { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' },
             { text: 'Changelog & Migration', link: '/reference/changelog' }

@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strings"
+	"time"
 )
 
 // Default Captcha HTML challenge template
@@ -116,9 +119,10 @@ type ResponseHandler struct {
 	config          *ResponseConfig
 	silentDrop      bool
 	captchaTemplate *template.Template
+	proxyHandler    http.Handler
 }
 
-// NewResponseHandler initializes a ResponseHandler with compiled templates.
+// NewResponseHandler initializes a ResponseHandler with compiled templates and proxy handlers.
 func NewResponseHandler(respCfg *ResponseConfig, topStatusCode int, topCustomText string, silentDrop bool) (*ResponseHandler, error) {
 	if respCfg == nil {
 		code := topStatusCode
@@ -156,11 +160,26 @@ func NewResponseHandler(respCfg *ResponseConfig, topStatusCode int, topCustomTex
 		}
 	}
 
+	var proxyHandler http.Handler
+	if strings.ToLower(respCfg.Mode) == "proxy" && strings.TrimSpace(respCfg.ProxyURL) != "" {
+		targetURL, err := url.Parse(respCfg.ProxyURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxyUrl %q: %w", respCfg.ProxyURL, err)
+		}
+		proxyHandler = httputil.NewSingleHostReverseProxy(targetURL)
+	}
+
 	return &ResponseHandler{
 		config:          respCfg,
 		silentDrop:      silentDrop,
 		captchaTemplate: parsedTmpl,
+		proxyHandler:    proxyHandler,
 	}, nil
+}
+
+// SetProxyHandlerForTest allows unit tests to inject a mock reverse proxy handler without listening on network sockets.
+func (h *ResponseHandler) SetProxyHandlerForTest(p http.Handler) {
+	h.proxyHandler = p
 }
 
 // ServeBlockedRequest handles writing the configured response to the client.
@@ -289,6 +308,158 @@ func (h *ResponseHandler) ServeBlockedRequest(w http.ResponseWriter, req *http.R
 		for i := 0; i < totalChunks; i++ {
 			if _, err := gz.Write(zeroChunk); err != nil {
 				// Client hung up, timed out, or crashed due to memory exhaustion
+				break
+			}
+		}
+
+	case "tarpit":
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(h.config.StatusCode)
+
+		flusher, ok := w.(http.Flusher)
+		delayMs := h.config.TarpitDelayMs
+		if delayMs <= 0 {
+			delayMs = 1000 // default 1 second between chunks
+		}
+		maxDurationSec := h.config.TarpitMaxDurationSeconds
+		if maxDurationSec <= 0 {
+			maxDurationSec = 60 // default 60s tarpit duration
+		}
+
+		ctx := req.Context()
+		timeout := time.After(time.Duration(maxDurationSec) * time.Second)
+		ticker := time.NewTicker(time.Duration(delayMs) * time.Millisecond)
+		defer ticker.Stop()
+
+		// Stream single null byte at slow trickle to tie up attacker socket/workers
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-timeout:
+				return
+			case <-ticker.C:
+				if _, err := w.Write([]byte(" ")); err != nil {
+					return
+				}
+				if ok {
+					flusher.Flush()
+				}
+			}
+		}
+
+	case "fakesuccess", "decoy":
+		// Serve synthetic honeypot payloads simulating real assets
+		p := strings.ToLower(req.URL.Path)
+		contentType := "text/plain; charset=utf-8"
+		body := h.config.Body
+
+		if body == "" {
+			if strings.Contains(p, ".env") {
+				contentType = "text/plain; charset=utf-8"
+				body = "APP_NAME=Laravel\nAPP_ENV=production\nAPP_KEY=base64:9a8f7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8=\nAPP_DEBUG=false\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=forge\nDB_USERNAME=forge\nDB_PASSWORD=fake_honey_db_password_77a9b\n"
+			} else if strings.Contains(p, "actuator") {
+				contentType = "application/json"
+				body = `{"status":"UP","components":{"diskSpace":{"status":"UP","details":{"total":10737418240,"free":8589934592,"threshold":10485760}},"ping":{"status":"UP"}}}`
+			} else if strings.Contains(p, ".git/head") || strings.HasSuffix(p, ".git") || strings.Contains(p, ".git/") {
+				contentType = "text/plain; charset=utf-8"
+				body = "ref: refs/heads/master\n"
+			} else if strings.Contains(p, "phpinfo") || strings.Contains(p, "info.php") {
+				contentType = "text/html; charset=utf-8"
+				body = "<!DOCTYPE html><html><head><title>PHP 8.2.14 - phpinfo()</title></head><body><h1>PHP Version 8.2.14</h1><p>System Linux 5.15.0-generic</p></body></html>"
+			} else if strings.Contains(p, "wp-login") {
+				contentType = "text/html; charset=utf-8"
+				body = "<!DOCTYPE html><html><head><title>Log In &lsaquo; WordPress</title></head><body><form name='loginform' id='loginform'><input type='text' name='log' /><input type='password' name='pwd' /></form></body></html>"
+			} else {
+				contentType = "application/json"
+				body = `{"status":"success","data":{"id":1,"active":true}}`
+			}
+		}
+
+		if h.config.ContentType != "" {
+			contentType = h.config.ContentType
+		}
+		w.Header().Set("Content-Type", contentType)
+		statusCode := h.config.StatusCode
+		if statusCode < 200 || statusCode > 299 {
+			statusCode = http.StatusOK
+		}
+		w.WriteHeader(statusCode)
+		_, _ = fmt.Fprintln(w, body)
+
+	case "ratelimit", "ratelimitchallenge", "backoff":
+		retrySec := h.config.RetryAfterSeconds
+		if retrySec <= 0 {
+			retrySec = 300 // default 5 minutes
+		}
+		w.Header().Set("Retry-After", fmt.Sprintf("%d", retrySec))
+		contentType := h.config.ContentType
+		if contentType == "" {
+			contentType = "application/json"
+		}
+		w.Header().Set("Content-Type", contentType)
+		statusCode := h.config.StatusCode
+		if statusCode == 0 || statusCode == http.StatusForbidden {
+			statusCode = http.StatusTooManyRequests
+		}
+		w.WriteHeader(statusCode)
+		body := h.config.Body
+		if strings.TrimSpace(body) == "" {
+			body = fmt.Sprintf(`{"error":"Too Many Requests","status":%d,"retryAfter":%d,"message":"Rate limit exceeded. Please back off."}`, statusCode, retrySec)
+		}
+		_, _ = fmt.Fprintln(w, body)
+
+	case "xml":
+		contentType := h.config.ContentType
+		if contentType == "" {
+			contentType = "application/xml; charset=utf-8"
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(h.config.StatusCode)
+		body := h.config.Body
+		if strings.TrimSpace(body) == "" {
+			body = fmt.Sprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error>\n  <Status>%d</Status>\n  <Message>Access to protected endpoint is denied</Message>\n</Error>", h.config.StatusCode)
+		}
+		_, _ = fmt.Fprintln(w, body)
+
+	case "proxy", "mirror":
+		if h.proxyHandler != nil {
+			h.proxyHandler.ServeHTTP(w, req)
+			return
+		}
+		// Fallback if proxy URL not configured
+		w.WriteHeader(http.StatusBadGateway)
+		_, _ = fmt.Fprintln(w, "Honeypot proxy destination unavailable")
+
+	case "infinitestream", "garbagestream":
+		contentType := h.config.ContentType
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(h.config.StatusCode)
+
+		streamMB := h.config.StreamSizeMB
+		if streamMB <= 0 {
+			streamMB = 50 // default 50MB
+		}
+
+		garbagePattern := []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+{}[]|:;<>?,./~`-=\n")
+		buf := make([]byte, 32*1024)
+		for i := 0; i < len(buf); i++ {
+			buf[i] = garbagePattern[i%len(garbagePattern)]
+		}
+
+		totalChunks := (streamMB * 1024 * 1024) / len(buf)
+		if totalChunks <= 0 {
+			totalChunks = 16
+		}
+
+		for i := 0; i < totalChunks; i++ {
+			if _, err := w.Write(buf); err != nil {
 				break
 			}
 		}
