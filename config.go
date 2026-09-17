@@ -44,36 +44,39 @@ type ResponseConfig struct {
 	Headers     map[string]string `json:"headers,omitempty"`     // Custom response headers (e.g. Retry-After, X-Blocked-By)
 	RedirectURL string            `json:"redirectUrl,omitempty"` // Target URL when Mode is "redirect"
 	Captcha     *CaptchaConfig    `json:"captcha,omitempty"`     // Captcha settings when Mode is "captcha"
+	GzipBombMB  int               `json:"gzipBombMB,omitempty"`  // Uncompressed size in Megabytes for gzipBomb mode (default: 10, ~10MB expands to ~10GB on client)
 }
 
 // Config holds the plugin configuration.
 type Config struct {
-	Enabled               bool            `json:"enabled,omitempty"`
-	EnableDefaultPatterns bool            `json:"enableDefaultPatterns,omitempty"`
-	PathPatterns          []string        `json:"pathPatterns,omitempty"` // Synonym for blockPatterns
-	BlockPatterns         []string        `json:"blockPatterns,omitempty"`
-	AllowPatterns         []string        `json:"allowPatterns,omitempty"`
-	AllowedIPs           []string        `json:"allowedIps,omitempty"` // Whitelist of IPs or CIDR subnets exempt from blocking
-	StatusCode            int             `json:"statusCode,omitempty"`
-	CustomResponseText    string          `json:"customResponseText,omitempty"`
-	SilentDrop            bool            `json:"silentDrop,omitempty"`
-	CheckQuery            bool            `json:"checkQuery,omitempty"`
-	Response              *ResponseConfig `json:"response,omitempty"`
+	Enabled                    bool            `json:"enabled,omitempty"`
+	EnableDefaultPatterns      bool            `json:"enableDefaultPatterns,omitempty"`
+	EnableDefaultAllowPatterns bool            `json:"enableDefaultAllowPatterns,omitempty"` // Controls built-in whitelist (robots.txt, sitemap.xml, .well-known)
+	PathPatterns               []string        `json:"pathPatterns,omitempty"`              // Synonym for blockPatterns
+	BlockPatterns              []string        `json:"blockPatterns,omitempty"`
+	AllowPatterns              []string        `json:"allowPatterns,omitempty"`
+	AllowedIPs                []string        `json:"allowedIps,omitempty"` // Whitelist of IPs or CIDR subnets exempt from blocking
+	StatusCode                 int             `json:"statusCode,omitempty"`
+	CustomResponseText         string          `json:"customResponseText,omitempty"`
+	SilentDrop                 bool            `json:"silentDrop,omitempty"`
+	CheckQuery                 bool            `json:"checkQuery,omitempty"`
+	Response                   *ResponseConfig `json:"response,omitempty"`
 }
 
 // CreateConfig creates the default plugin configuration.
 func CreateConfig() *Config {
 	return &Config{
-		Enabled:               true,
-		EnableDefaultPatterns: true,
-		PathPatterns:          []string{},
-		BlockPatterns:         []string{},
-		AllowPatterns:         DefaultAllowPatterns,
-		AllowedIPs:           []string{},
-		StatusCode:            http.StatusForbidden,
-		CustomResponseText:    "403 Forbidden: Access to sensitive endpoint is blocked",
-		SilentDrop:            false,
-		CheckQuery:            false,
-		Response:              nil,
+		Enabled:                    true,
+		EnableDefaultPatterns:      true,
+		EnableDefaultAllowPatterns: true,
+		PathPatterns:               []string{},
+		BlockPatterns:              []string{},
+		AllowPatterns:              []string{},
+		AllowedIPs:                []string{},
+		StatusCode:                 http.StatusForbidden,
+		CustomResponseText:         "403 Forbidden: Access to sensitive endpoint is blocked",
+		SilentDrop:                 false,
+		CheckQuery:                 false,
+		Response:                   nil,
 	}
 }

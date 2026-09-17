@@ -46,8 +46,14 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		compiledBlockRegexes = append(compiledBlockRegexes, re)
 	}
 
-	compiledAllowRegexes := make([]*regexp.Regexp, 0, len(config.AllowPatterns))
-	for _, p := range config.AllowPatterns {
+	var allowPatterns []string
+	if config.EnableDefaultAllowPatterns {
+		allowPatterns = append(allowPatterns, DefaultAllowPatterns...)
+	}
+	allowPatterns = append(allowPatterns, config.AllowPatterns...)
+
+	compiledAllowRegexes := make([]*regexp.Regexp, 0, len(allowPatterns))
+	for _, p := range allowPatterns {
 		if strings.TrimSpace(p) == "" {
 			continue
 		}

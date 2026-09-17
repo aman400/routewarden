@@ -1,85 +1,154 @@
-/* Navbar layout & responsiveness improvements */
+/* Desktop Navbar layout */
+@media (min-width: 768px) {
+  .VPNavBarTitle {
+    flex-shrink: 0 !important;
+    margin-right: 1.25rem !important;
+  }
 
-/* Fix flex layout in VitePress navbar */
-.VPNavBarTitle {
-  flex-shrink: 0 !important;
-  margin-right: 1.25rem !important;
+  .VPNavBarTitle .title {
+    display: flex !important;
+    align-items: center !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+  }
+
+  .VPNavBarSearch {
+    display: flex !important;
+    align-items: center !important;
+    margin-right: 1.5rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .VPNavBarSearch .DocSearch-Button,
+  .VPNavBarSearch .search-btn {
+    display: flex !important;
+    align-items: center !important;
+    min-width: 160px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--vp-c-divider) !important;
+    background-color: var(--vp-c-bg-alt) !important;
+    cursor: pointer !important;
+    transition: border-color 0.25s, background-color 0.25s !important;
+  }
+
+  .VPNavBarSearch .DocSearch-Button:hover,
+  .VPNavBarSearch .search-btn:hover {
+    border-color: var(--vp-c-brand-1) !important;
+    background-color: var(--vp-c-bg-mute) !important;
+  }
+
+  .VPNavBarSearch .DocSearch-Button-Placeholder,
+  .VPNavBarSearch .DocSearch-Button-Keys,
+  .VPNavBarSearch .DocSearch-Search-Icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .VPNavBarSearch .DocSearch-Button-Placeholder {
+    font-size: 13px !important;
+    color: var(--vp-c-text-2) !important;
+    padding: 0 8px !important;
+  }
+
+  .VPNavBarSearch .DocSearch-Button-Key {
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    background: var(--vp-c-bg) !important;
+    border: 1px solid var(--vp-c-divider) !important;
+  }
+
+  .VPNavBar .content {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    flex-grow: 1 !important;
+    padding-left: 1rem !important;
+  }
+
+  .VPNavBarMenuLink,
+  .VPNavBarMenuGroup {
+    padding: 0 10px !important;
+    font-size: 13.5px !important;
+    white-space: nowrap !important;
+  }
 }
 
-.VPNavBarTitle .title {
-  display: flex !important;
-  align-items: center !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-}
+/* Mobile optimizations (< 768px) */
+@media (max-width: 767px) {
+  .VPNavBarTitle {
+    margin-right: 0.5rem !important;
+  }
 
-/* Give search high priority & clear styling */
-.VPNavBarSearch {
-  display: flex !important;
-  align-items: center !important;
-  margin-right: 1.5rem !important;
-  flex-shrink: 0 !important;
-}
+  .VPNavBarTitle .title {
+    font-size: 15px !important;
+  }
 
-/* Styling for local search button */
-.VPNavBarSearch .DocSearch-Button,
-.VPNavBarSearch .search-btn {
-  display: flex !important;
-  align-items: center !important;
-  min-width: 160px !important;
-  height: 36px !important;
-  padding: 0 12px !important;
-  border-radius: 8px !important;
-  border: 1px solid var(--vp-c-divider) !important;
-  background-color: var(--vp-c-bg-alt) !important;
-  cursor: pointer !important;
-  transition: border-color 0.25s, background-color 0.25s !important;
-}
+  .VPNavBarSearch {
+    margin-right: 0.5rem !important;
+  }
 
-.VPNavBarSearch .DocSearch-Button:hover,
-.VPNavBarSearch .search-btn:hover {
-  border-color: var(--vp-c-brand-1) !important;
-  background-color: var(--vp-c-bg-mute) !important;
-}
+  /* Compact icon button for search on mobile */
+  .VPNavBarSearch .DocSearch-Button,
+  .VPNavBarSearch .search-btn {
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    background-color: transparent !important;
+  }
 
-/* Ensure placeholder text and keys are legible and visible */
-.VPNavBarSearch .DocSearch-Button-Placeholder,
-.VPNavBarSearch .DocSearch-Button-Keys,
-.VPNavBarSearch .DocSearch-Search-Icon {
-  display: inline-flex !important;
-  align-items: center !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
+  .VPNavBarSearch .DocSearch-Button-Placeholder,
+  .VPNavBarSearch .DocSearch-Button-Keys {
+    display: none !important;
+  }
 
-.VPNavBarSearch .DocSearch-Button-Placeholder {
-  font-size: 13px !important;
-  color: var(--vp-c-text-2) !important;
-  padding: 0 8px !important;
-}
+  /* Prevent table overflow on small screens */
+  .vp-doc table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 
-.VPNavBarSearch .DocSearch-Button-Key {
-  font-size: 11px !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-  background: var(--vp-c-bg) !important;
-  border: 1px solid var(--vp-c-divider) !important;
-}
+  /* Code tabs horizontal scroll */
+  .vp-code-group .tabs {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .vp-code-group .tabs::-webkit-scrollbar {
+    display: none !important;
+  }
 
-/* Content container */
-.VPNavBar .content {
-  display: flex !important;
-  justify-content: flex-end !important;
-  align-items: center !important;
-  flex-grow: 1 !important;
-  padding-left: 1rem !important;
-}
+  .home-pipeline {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin: 20px 0 !important;
+  }
 
-.VPNavBarMenuLink,
-.VPNavBarMenuGroup {
-  padding: 0 10px !important;
-  font-size: 13.5px !important;
-  white-space: nowrap !important;
+  .attack-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .pipeline-step,
+  .attack-card {
+    padding: 14px 16px !important;
+  }
+
+  /* Hero section adjustments */
+  .VPHero.has-image .container {
+    text-align: center !important;
+  }
 }
 
 /* Homepage enhanced aesthetics */

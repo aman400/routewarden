@@ -32,12 +32,13 @@
 
 ## What is RouteWarden?
 
-**RouteWarden** is a lightweight Traefik middleware written in pure Go (with zero external dependencies) that intercepts and blocks requests before they reach your backend:
+**RouteWarden** is a lightweight Traefik middleware written in pure Go (with zero external dependencies) that intercepts malicious reconnaissance probing, sensitive file exposure, and automated bot scans before requests ever reach your backend:
 
-- 🛡️ **Zero-Config Defense**: Blocks `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, logs, and debug endpoints.
-- ⚡ **Anti-Evasion**: Normalizes double-URL encoding (`%252e%252e`), semicolon matrix params (`/;param/.env`), and Windows backslashes (`\`).
-- 🌐 **IP & CIDR Whitelist**: Bypass blocking for corporate VPNs, office IPs, or developer subnets (`10.0.0.0/8`).
-- 🎭 **Flexible Responses**: Return custom **404 Not Found**, **403 Forbidden**, custom JSON, HTML, **302 Redirect**, or interactive **Turnstile / hCaptcha / reCAPTCHA** challenges.
+- 🛡️ **Anti-Probing & Scanner Defense**: Instantly halts automated web vulnerability scanners and bots probing for exposed secrets, configuration files, and unprotected admin interfaces.
+- 📁 **Zero-Config File Guard**: Out-of-the-box blocking for `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, server logs, and debug endpoints.
+- ⚡ **Anti-Evasion Engine**: Normalizes multi-layer URL encoding (`%252e%252e`), semicolon matrix parameters (`/;param/.env`), Windows backslashes (`\`), and null bytes.
+- 🌐 **IP & CIDR Whitelist**: Bypass blocking for corporate VPNs, office IPs, or developer subnets (`10.0.0.0/8`, `100.64.0.0/10`).
+- 🎭 **Flexible Responses**: Neutralize probe attempts with standard **404 Not Found** (making endpoints appear non-existent), **403 Forbidden**, custom JSON, HTML, honeypot **Redirects**, or interactive **Turnstile / hCaptcha** challenges.
 
 ---
 
@@ -56,7 +57,7 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
-      - "--experimental.plugins.routewarden.version=v0.2.2"
+      - "--experimental.plugins.routewarden.version=v0.2.3"
     ports:
       - "80:80"
     volumes:
@@ -95,7 +96,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/aman400/routewarden
-      version: v0.2.2
+      version: v0.2.3
 ```
 
 #### 2. Dynamic Configuration (`dynamic_conf.yml`)
@@ -143,12 +144,13 @@ http:
 |---|---|---|---|
 | `enabled` | `bool` | `true` | Turn the middleware on or off. |
 | `enableDefaultPatterns` | `bool` | `true` | Block common sensitive files (`.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.log`, configs). |
+| `enableDefaultAllowPatterns` | `bool` | `true` | Enable built-in allowlist exemptions (`/robots.txt`, `/sitemap.xml`, `/.well-known/*`). |
 | `pathPatterns` | `[]string` | `[]` | Additional custom regex patterns to block (e.g. `['(?i)^/admin/.*']`). |
-| `allowPatterns` | `[]string` | `[...]` | Safe regex overrides (defaults: `/robots.txt`, `/ads.txt`, `/.well-known/*`). |
+| `allowPatterns` | `[]string` | `[]` | Custom safe regex overrides to always allow. |
 | `allowedIps` | `[]string` | `[]` | Whitelisted IPv4/IPv6 addresses or CIDR subnets (e.g. `127.0.0.1`, `10.0.0.0/8`). |
 | `checkQuery` | `bool` | `false` | Also inspect query parameters for blocked patterns. |
-| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"captcha"`, `"redirect"`, or `"silentDrop"`. |
-| `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`). |
+| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"captcha"`, `"redirect"`, `"silentDrop"`, or `"gzipBomb"`. |
+| `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
 
 > 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://aman400.github.io/routewarden/reference/configuration)**.
