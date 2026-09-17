@@ -5,7 +5,7 @@ import versionsRegistry from '../versions.json' with { type: 'json' }
 export default defineConfig({
   title: 'RouteWarden',
   description: 'High-Performance Traefik Middleware for Sensitive Path Defense',
-  base: '/',
+  base: '/traefik-warden/',
   cleanUrls: true,
   transformPageData(pageData) {
     // Provide version globally to markdown templates
@@ -21,19 +21,19 @@ export default defineConfig({
     }
   },
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/traefik-warden/icon.svg' }],
     ['meta', { name: 'theme-color', content: '#6366f1' }],
     ['meta', { name: 'author', content: 'RouteWarden Contributors' }],
     ['meta', { name: 'keywords', content: 'traefik, traefik plugin, middleware, security, anti-evasion, ip whitelist, sensitive files, env protection, reverse proxy waf' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'RouteWarden — High-Performance Traefik Middleware' }],
     ['meta', { property: 'og:description', content: 'Stop sensitive file leaks (.env, .git, backups), neutralize path evasion attacks, whitelist IPs, and challenge threats before requests reach your backend.' }],
-    ['meta', { property: 'og:image', content: 'https://routewarden.github.io/banner.png' }],
-    ['meta', { property: 'og:url', content: 'https://routewarden.github.io/' }],
+    ['meta', { property: 'og:image', content: 'https://routewarden.github.io/traefik-warden/banner.png' }],
+    ['meta', { property: 'og:url', content: 'https://routewarden.github.io/traefik-warden/' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: 'RouteWarden — Traefik Security Middleware' }],
     ['meta', { name: 'twitter:description', content: 'Ultra-fast sensitive path defense, anti-evasion normalization, IP whitelisting, and multi-action responses for Traefik.' }],
-    ['meta', { name: 'twitter:image', content: 'https://routewarden.github.io/banner.png' }]
+    ['meta', { name: 'twitter:image', content: 'https://routewarden.github.io/traefik-warden/banner.png' }]
   ],
   themeConfig: {
     logo: '/icon.svg',
