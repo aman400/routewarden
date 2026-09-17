@@ -14,8 +14,8 @@ When using `localPlugins`, Traefik requires the source code to be mounted in a s
 plugins-local/
 └── src/
     └── github.com/
-        └── aman400/
-            └── routewarden/
+        └── routewarden/
+            └── traefik-warden/
                 ├── .traefik.yml
                 ├── config.go
                 ├── ip_filter.go
@@ -35,7 +35,7 @@ plugins-local/
 experimental:
   localPlugins:
     routewarden:
-      moduleName: github.com/aman400/routewarden
+      moduleName: github.com/routewarden/traefik-warden
 
 # dynamic_conf.yml (Dynamic Middleware & Router)
 http:
@@ -63,7 +63,7 @@ http:
 ```toml [File (TOML)]
 # traefik.toml (Static)
 [experimental.localPlugins.routewarden]
-  moduleName = "github.com/aman400/routewarden"
+  moduleName = "github.com/routewarden/traefik-warden"
 
 # dynamic_conf.toml (Dynamic Middleware & Router)
 [http.routers.app-router]
@@ -88,7 +88,7 @@ traefik \
   --api.insecure=true \
   --providers.docker=true \
   --entrypoints.web.address=:80 \
-  --experimental.localplugins.routewarden.modulename=github.com/aman400/routewarden \
+  --experimental.localplugins.routewarden.modulename=github.com/routewarden/traefik-warden \
   --log.level=DEBUG
 ```
 
@@ -111,7 +111,7 @@ services:
       - "--entrypoints.web.address=:80"
       
       # Declare RouteWarden as a LOCAL plugin:
-      - "--experimental.localPlugins.routewarden.modulename=github.com/aman400/routewarden"
+      - "--experimental.localPlugins.routewarden.modulename=github.com/routewarden/traefik-warden"
       
       # Log level debug helps verify plugin loading
       - "--log.level=DEBUG"
@@ -121,7 +121,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       # Mount your local repository directory into Traefik's plugins-local path:
-      - ".:/plugins-local/src/github.com/aman400/routewarden:ro"
+      - ".:/plugins-local/src/github.com/routewarden/traefik-warden:ro"
 
   webapp:
     image: nginx:alpine
@@ -154,7 +154,7 @@ docker compose up
 Watch the Traefik startup logs. You should see Traefik's Yaegi interpreter successfully compiling the local plugin:
 
 ```text
-level=info msg="Loading plugin: routewarden with module: github.com/aman400/routewarden"
+level=info msg="Loading plugin: routewarden with module: github.com/routewarden/traefik-warden"
 level=info msg="Plugin routewarden loaded successfully"
 ```
 
@@ -180,7 +180,7 @@ curl -i "http://localhost/%2eenv"
 ```
 
 ### Step 5: Live Code Iteration
-Because the repository root is mounted with `- .:/plugins-local/src/github.com/aman400/routewarden:ro`, whenever you modify Go code, simply restart Traefik to recompile:
+Because the repository root is mounted with `- .:/plugins-local/src/github.com/routewarden/traefik-warden:ro`, whenever you modify Go code, simply restart Traefik to recompile:
 
 ```bash
 docker compose restart traefik

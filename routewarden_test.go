@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 func TestRouteWarden_Defaults(t *testing.T) {
@@ -412,6 +412,51 @@ func TestRouteWarden_InvalidRegex(t *testing.T) {
 	_, err := routewarden.New(context.Background(), next, cfg, "error-test")
 	if err == nil {
 		t.Errorf("expected error for invalid regex pattern, got nil")
+	}
+}
+
+func TestRouteWarden_InvalidAllowRegex(t *testing.T) {
+	cfg := routewarden.CreateConfig()
+	cfg.AllowPatterns = []string{"[unclosed bracket"}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	_, err := routewarden.New(context.Background(), next, cfg, "allow-error-test")
+	if err == nil {
+		t.Errorf("expected error for invalid allow regex pattern, got nil")
+	}
+}
+
+func TestRouteWarden_NilConfig(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler, err := routewarden.New(context.Background(), next, nil, "nil-config-test")
+	if err != nil {
+		t.Fatalf("unexpected error initializing with nil config: %v", err)
+	}
+
+	// Should block sensitive files using default config
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403 with nil config, got %d", rr.Code)
+	}
+}
+
+func TestRouteWarden_InvalidResponseConfig(t *testing.T) {
+	cfg := routewarden.CreateConfig()
+	cfg.Response = &routewarden.ResponseConfig{
+		Mode:     "proxy",
+		ProxyURL: "://invalid-url",
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	_, err := routewarden.New(context.Background(), next, cfg, "resp-error-test")
+	if err == nil {
+		t.Errorf("expected error initializing with invalid proxy url")
 	}
 }
 

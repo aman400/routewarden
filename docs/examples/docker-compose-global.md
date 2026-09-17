@@ -59,7 +59,7 @@ http:
 traefik \
   --entrypoints.web.address=:80 \
   --entrypoints.web.http.middlewares=global-warden@docker \
-  --experimental.plugins.routewarden.modulename=github.com/aman400/routewarden \
+  --experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden \
   --experimental.plugins.routewarden.version={{version}}
 ```
 
@@ -78,7 +78,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+      - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
       - "--experimental.plugins.routewarden.version={{version}}"
       # Attach global-warden middleware to all incoming traffic on entrypoint
       - "--entrypoints.web.http.middlewares=global-warden@docker"

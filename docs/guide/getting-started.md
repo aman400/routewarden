@@ -36,20 +36,20 @@ Declare RouteWarden in Traefik's plugins configuration:
 experimental:
   plugins:
     routewarden:
-      moduleName: github.com/aman400/routewarden
+      moduleName: github.com/routewarden/traefik-warden
       version: {{version}}
 ```
 
 ```toml [File (TOML)]
 # traefik.toml
 [experimental.plugins.routewarden]
-  moduleName = "github.com/aman400/routewarden"
+  moduleName = "github.com/routewarden/traefik-warden"
   version = "{{version}}"
 ```
 
 ```bash [CLI]
 traefik \
-  --experimental.plugins.routewarden.modulename=github.com/aman400/routewarden \
+  --experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden \
   --experimental.plugins.routewarden.version={{version}}
 ```
 
@@ -61,14 +61,14 @@ traefik \
 > experimental:
 >   localPlugins:
 >     routewarden:
->       moduleName: github.com/aman400/routewarden
+>       moduleName: github.com/routewarden/traefik-warden
 > ```
 > ```toml [File (TOML)]
 > [experimental.localPlugins.routewarden]
->   moduleName = "github.com/aman400/routewarden"
+>   moduleName = "github.com/routewarden/traefik-warden"
 > ```
 > ```bash [CLI]
-> traefik --experimental.localplugins.routewarden.modulename=github.com/aman400/routewarden
+> traefik --experimental.localplugins.routewarden.modulename=github.com/routewarden/traefik-warden
 > ```
 > :::
 

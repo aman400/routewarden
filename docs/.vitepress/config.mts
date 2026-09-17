@@ -5,7 +5,7 @@ import versionsRegistry from '../versions.json' with { type: 'json' }
 export default defineConfig({
   title: 'RouteWarden',
   description: 'High-Performance Traefik Middleware for Sensitive Path Defense',
-  base: '/routewarden/',
+  base: '/',
   cleanUrls: true,
   transformPageData(pageData) {
     // Provide version globally to markdown templates
@@ -21,19 +21,19 @@ export default defineConfig({
     }
   },
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/routewarden/icon.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' }],
     ['meta', { name: 'theme-color', content: '#6366f1' }],
     ['meta', { name: 'author', content: 'RouteWarden Contributors' }],
     ['meta', { name: 'keywords', content: 'traefik, traefik plugin, middleware, security, anti-evasion, ip whitelist, sensitive files, env protection, reverse proxy waf' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'RouteWarden — High-Performance Traefik Middleware' }],
     ['meta', { property: 'og:description', content: 'Stop sensitive file leaks (.env, .git, backups), neutralize path evasion attacks, whitelist IPs, and challenge threats before requests reach your backend.' }],
-    ['meta', { property: 'og:image', content: 'https://aman400.github.io/routewarden/banner.png' }],
-    ['meta', { property: 'og:url', content: 'https://aman400.github.io/routewarden/' }],
+    ['meta', { property: 'og:image', content: 'https://routewarden.github.io/banner.png' }],
+    ['meta', { property: 'og:url', content: 'https://routewarden.github.io/' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['meta', { name: 'twitter:title', content: 'RouteWarden — Traefik Security Middleware' }],
     ['meta', { name: 'twitter:description', content: 'Ultra-fast sensitive path defense, anti-evasion normalization, IP whitelisting, and multi-action responses for Traefik.' }],
-    ['meta', { name: 'twitter:image', content: 'https://aman400.github.io/routewarden/banner.png' }]
+    ['meta', { name: 'twitter:image', content: 'https://routewarden.github.io/banner.png' }]
   ],
   themeConfig: {
     logo: '/icon.svg',
@@ -54,6 +54,7 @@ export default defineConfig({
         activeMatch: '^/reference/',
         items: [
           { text: 'Configuration Options', link: '/reference/configuration' },
+          { text: 'Response Modes Engine', link: '/reference/response-modes' },
           { text: 'Custom Path Patterns', link: '/reference/custom-paths' },
           { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' },
           { text: 'Changelog & Migrations', link: '/reference/changelog' }
@@ -99,6 +100,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Configuration Reference', link: '/reference/configuration' },
+            { text: 'Response Modes Engine', link: '/reference/response-modes' },
             { text: 'Custom Path Patterns', link: '/reference/custom-paths' },
             { text: 'Anti-Evasion Security', link: '/reference/anti-evasion' },
             { text: 'Changelog & Migration', link: '/reference/changelog' }
@@ -135,7 +137,7 @@ export default defineConfig({
       provider: 'local'
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/aman400/routewarden' }
+      { icon: 'github', link: 'https://github.com/routewarden/traefik-warden' }
     ],
     footer: {
       message: 'Released under the MIT License.',
