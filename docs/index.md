@@ -21,8 +21,8 @@ hero:
 
 features:
   - icon: 🛡️
-    title: Zero-Config Sensitive File Blocking
-    details: Automatically guards against unauthorized access to .env, .git, .aws, backups (.sql, .bak), config files (.yaml, .ini), logs, and debug endpoints.
+    title: Anti-Probing & Scanner Defense
+    details: Automatically intercepts automated bots and vulnerability crawlers probing for exposed credentials, backups, and administrative endpoints.
   - icon: ⚡
     title: Advanced Anti-Evasion Engine
     details: Defeats multi-layer URL encoding, directory traversal (../), IIS backslashes (\), semicolon matrix parameters, and null byte injections.
@@ -42,9 +42,9 @@ features:
 
 ## What is RouteWarden?
 
-**RouteWarden** is an ultra-fast, zero-dependency Traefik middleware plugin built in pure Go. It acts as an **in-line security shield** deployed at your edge router or ingress controller, safeguarding downstream microservices and web applications from accidental sensitive data exposure, reconnaissance scanners, and path evasion attacks.
+**RouteWarden** is an ultra-fast, zero-dependency Traefik middleware plugin built in pure Go. It acts as an **in-line security shield** deployed at your edge router or ingress controller, safeguarding downstream microservices and web applications from **reconnaissance probing**, accidental sensitive data exposure, and path evasion attacks.
 
-Every day, automated bots and vulnerability scanners probe web servers for `.env` files, `.git` credential databases, database backups, admin consoles, and leaked cloud credentials. RouteWarden intercepts and neutralizes these requests at the Traefik proxy layer **before they ever hit your upstream containers**.
+Every internet-connected IP is continuously bombarded by automated crawlers, Shodan/Censys scanners, and credential-harvesting bots searching for `.env` files, `.git` credential databases, database backups, admin consoles, and leaked cloud credentials. RouteWarden intercepts and neutralizes these probing attempts at the Traefik proxy layer **before they ever hit your upstream containers or touch your backend logs**.
 
 ---
 
@@ -208,9 +208,43 @@ http:
 
 ---
 
+## Production Case Studies
+
+Real-world deployment patterns demonstrating how engineering teams and self-hosters protect their applications using RouteWarden:
+
+<div class="attack-grid">
+  <div class="attack-card">
+    <h4>📸 <a href="/examples/case-study-immich">Immich Photo Sharing</a></h4>
+    <p>Public photo/album sharing while strictly cloaking administrative, login, and user management APIs under a 404.</p>
+  </div>
+  <div class="attack-card">
+    <h4>💳 <a href="/examples/case-study-webhooks">Zero-Trust Webhooks</a></h4>
+    <p>Lock down Stripe/GitHub payment webhook ingress using official provider IP CIDRs and silent TCP drops.</p>
+  </div>
+  <div class="attack-card">
+    <h4>📊 <a href="/examples/case-study-observability">Metrics & Actuator Cloaking</a></h4>
+    <p>Shield Prometheus <code>/metrics</code> and Spring Boot <code>/actuator</code> from public scanners while keeping internal scrapers active.</p>
+  </div>
+  <div class="attack-card">
+    <h4>📝 <a href="/examples/case-study-cms-shield">WordPress & CMS Shield</a></h4>
+    <p>Defeat brute-force and XML-RPC attacks on <code>wp-login.php</code> using interactive Cloudflare Turnstile / hCaptcha challenges.</p>
+  </div>
+  <div class="attack-card">
+    <h4>🔐 <a href="/examples/case-study-vaultwarden">Password Vaults (Bitwarden)</a></h4>
+    <p>Allow public mobile password sync while restricting <code>/admin</code> strictly to WireGuard or Tailscale subnets.</p>
+  </div>
+  <div class="attack-card">
+    <h4>🪤 <a href="/examples/case-study-honeypot-staging">Honeypots & Staging Cloak</a></h4>
+    <p>Reset scanner TCP connections with <code>silentDrop</code> and hide pull-request preview clusters from search engines.</p>
+  </div>
+</div>
+
+---
+
 ## Ready to Explore?
 
 - Check out the [Getting Started Guide](/guide/getting-started) for step-by-step installation instructions.
 - Learn about the [System Architecture](/guide/architecture) and how RouteWarden processes requests.
 - Explore the [Examples Cookbook](/examples/overview) for Docker Compose and Kubernetes manifests.
+- Browse all [Production Case Studies](/examples/case-study-immich) for practical production blueprints.
 - Read the [Anti-Evasion Security Deep Dive](/reference/anti-evasion) for security test results.

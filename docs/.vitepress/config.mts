@@ -22,7 +22,18 @@ export default defineConfig({
   },
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/routewarden/icon.svg' }],
-    ['meta', { name: 'theme-color', content: '#6366f1' }]
+    ['meta', { name: 'theme-color', content: '#6366f1' }],
+    ['meta', { name: 'author', content: 'RouteWarden Contributors' }],
+    ['meta', { name: 'keywords', content: 'traefik, traefik plugin, middleware, security, anti-evasion, ip whitelist, sensitive files, env protection, reverse proxy waf' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:title', content: 'RouteWarden — High-Performance Traefik Middleware' }],
+    ['meta', { property: 'og:description', content: 'Stop sensitive file leaks (.env, .git, backups), neutralize path evasion attacks, whitelist IPs, and challenge threats before requests reach your backend.' }],
+    ['meta', { property: 'og:image', content: 'https://aman400.github.io/routewarden/banner.png' }],
+    ['meta', { property: 'og:url', content: 'https://aman400.github.io/routewarden/' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:title', content: 'RouteWarden — Traefik Security Middleware' }],
+    ['meta', { name: 'twitter:description', content: 'Ultra-fast sensitive path defense, anti-evasion normalization, IP whitelisting, and multi-action responses for Traefik.' }],
+    ['meta', { name: 'twitter:image', content: 'https://aman400.github.io/routewarden/banner.png' }]
   ],
   themeConfig: {
     logo: '/icon.svg',
@@ -48,7 +59,8 @@ export default defineConfig({
           { text: 'Changelog & Migrations', link: '/reference/changelog' }
         ]
       },
-      { text: 'Examples', link: '/examples/overview', activeMatch: '^/examples/' },
+      { text: 'Examples', link: '/examples/overview', activeMatch: '^/examples/(basic|docker|ip|captcha|kubernetes|overview)' },
+      { text: 'Case Studies', link: '/examples/case-study-immich', activeMatch: '^/examples/case-study' },
       {
         text: 'v0.2.x',
         activeMatch: '^/v0\\.',
@@ -103,6 +115,18 @@ export default defineConfig({
             { text: '4. IP / Subnet Whitelisting', link: '/examples/ip-whitelisting' },
             { text: '5. Captcha Challenge', link: '/examples/captcha' },
             { text: '6. Kubernetes IngressRoute', link: '/examples/kubernetes' }
+          ]
+        },
+        {
+          text: 'Case Studies',
+          collapsed: false,
+          items: [
+            { text: '1. Immich: Dual-Router Security', link: '/examples/case-study-immich' },
+            { text: '2. Zero-Trust Webhook Ingress', link: '/examples/case-study-webhooks' },
+            { text: '3. Observability & Metrics Cloaking', link: '/examples/case-study-observability' },
+            { text: '4. CMS & WordPress Shielding', link: '/examples/case-study-cms-shield' },
+            { text: '5. Password Vaults (Vaultwarden)', link: '/examples/case-study-vaultwarden' },
+            { text: '6. Honeypots & Staging Cloaking', link: '/examples/case-study-honeypot-staging' }
           ]
         }
       ]

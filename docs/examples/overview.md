@@ -17,6 +17,19 @@ Browse ready-to-run configurations and production blueprints for RouteWarden acr
 
 ---
 
+## Production Case Studies
+
+| Case Study | Focus & Threat Model | Protection Pattern |
+|---|---|---|
+| [1. Immich Dual-Router Shield](/examples/case-study-immich) | Public photo/video sharing without exposing login/admin APIs. | Dual Traefik Routers + 404 Masking |
+| [2. Zero-Trust Webhooks](/examples/case-study-webhooks) | Secure Stripe/GitHub webhook ingress from unauthorized HTTP injection. | Provider CIDR Whitelisting + Silent Drop |
+| [3. Observability & Metrics Cloaking](/examples/case-study-observability) | Prevent public harvesting of Prometheus `/metrics` and `/actuator`. | VPC / Internal Scraper IP Exemption |
+| [4. CMS & WordPress Brute-Force Shield](/examples/case-study-cms-shield) | Eliminate credential-stuffing on `wp-login.php`, `xmlrpc.php`, and `/admin`. | Cloudflare Turnstile / hCaptcha Challenge |
+| [5. Password Vaults (Vaultwarden)](/examples/case-study-vaultwarden) | Public mobile password sync while restricting `/admin` to Tailscale/WireGuard. | VPN Subnet Filter + 404 Error Cloaking |
+| [6. Honeypots & Staging Cloaking](/examples/case-study-honeypot-staging) | Neutralize scanning bots and hide pull-request preview clusters from crawlers. | TCP RST (`silentDrop`) & 307 Deflection |
+
+---
+
 ## In-Repo Runnable Code
 
 All examples are checked directly into the [`examples/`](https://github.com/aman400/routewarden/tree/main/examples) directory of the RouteWarden GitHub repository. You can clone the repo and run any scenario in seconds:

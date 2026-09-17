@@ -327,6 +327,40 @@ func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
 	}
 }
 
+func TestRouteWarden_DisableDefaultAllowPatterns(t *testing.T) {
+	// When EnableDefaultAllowPatterns is false, standard paths like /robots.txt or /security.txt
+	// that match a block rule will NOT be exempted.
+	cfg := routewarden.CreateConfig()
+	cfg.EnableDefaultAllowPatterns = false
+	// Block all .txt files
+	cfg.PathPatterns = []string{`(?i).*\.txt$`}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "disable-default-allow-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// /robots.txt matches .*\.txt$ and should be blocked because default allow patterns are disabled
+	req1 := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	rr1 := httptest.NewRecorder()
+	handler.ServeHTTP(rr1, req1)
+	if rr1.Code != http.StatusForbidden {
+		t.Errorf("expected /robots.txt to be blocked when EnableDefaultAllowPatterns=false, got %d", rr1.Code)
+	}
+
+	// /security.txt should also be blocked
+	req2 := httptest.NewRequest(http.MethodGet, "/security.txt", nil)
+	rr2 := httptest.NewRecorder()
+	handler.ServeHTTP(rr2, req2)
+	if rr2.Code != http.StatusForbidden {
+		t.Errorf("expected /security.txt to be blocked when EnableDefaultAllowPatterns=false, got %d", rr2.Code)
+	}
+}
+
 func TestRouteWarden_CheckQuery(t *testing.T) {
 	cfg := routewarden.CreateConfig()
 	cfg.CheckQuery = true
@@ -565,6 +599,89 @@ func TestRouteWarden_InvalidAllowedIPs(t *testing.T) {
 	_, err2 := routewarden.New(context.Background(), next, cfg2, "invalid-cidr-test")
 	if err2 == nil {
 		t.Errorf("expected error on invalid CIDR mask, got nil")
+	}
+}
+
+func TestRouteWarden_WildcardAndPrefixPatterns(t *testing.T) {
+	cfg := routewarden.CreateConfig()
+	cfg.EnableDefaultPatterns = false
+	// Real-world API wildcard and prefix patterns (like Immich, admin dashboards, etc.)
+	cfg.PathPatterns = []string{
+		`(?i)^/api/auth/login.*$`,
+		`(?i)^/api/auth/admin-sign-up.*$`,
+		`(?i)^/api/users.*$`,
+		`(?i)^/api/admin.*$`,
+		`(?i)^/api/server-info/stats.*$`,
+		`(?i)^/internal/.*`,
+	}
+	cfg.Response = &routewarden.ResponseConfig{
+		Mode:       "json",
+		StatusCode: http.StatusNotFound,
+		Body:       `{"error":"Not Found"}`,
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true}`))
+	})
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "wildcard-test")
+	if err != nil {
+		t.Fatalf("failed to create handler: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		path         string
+		expectedCode int
+	}{
+		// Blocked by ^/api/auth/login.*$
+		{"Exact login endpoint", "/api/auth/login", http.StatusNotFound},
+		{"Login endpoint with trailing slash", "/api/auth/login/", http.StatusNotFound},
+		{"Login endpoint with subpath", "/api/auth/login/oauth", http.StatusNotFound},
+		{"Login endpoint with query", "/api/auth/login?redirect=/home", http.StatusNotFound},
+		{"Uppercase login", "/API/AUTH/LOGIN", http.StatusNotFound},
+
+		// Blocked by ^/api/auth/admin-sign-up.*$
+		{"Admin sign up exact", "/api/auth/admin-sign-up", http.StatusNotFound},
+		{"Admin sign up subpath", "/api/auth/admin-sign-up/submit", http.StatusNotFound},
+
+		// Blocked by ^/api/users.*$
+		{"Users root", "/api/users", http.StatusNotFound},
+		{"Users specific ID", "/api/users/123", http.StatusNotFound},
+		{"Users profile", "/api/users/me/profile", http.StatusNotFound},
+
+		// Blocked by ^/api/admin.*$
+		{"Admin root", "/api/admin", http.StatusNotFound},
+		{"Admin settings", "/api/admin/settings/security", http.StatusNotFound},
+
+		// Blocked by ^/api/server-info/stats.*$
+		{"Server stats", "/api/server-info/stats", http.StatusNotFound},
+		{"Server stats detail", "/api/server-info/stats/cpu", http.StatusNotFound},
+
+		// Blocked by ^/internal/.*
+		{"Internal endpoint", "/internal/metrics", http.StatusNotFound},
+
+		// Allowed public endpoints (should pass through to next with 200 OK)
+		{"Public share link", "/share/Hj89aLm1", http.StatusOK},
+		{"Public asset thumbnail", "/api/asset/thumbnail/456", http.StatusOK},
+		{"Public photo view", "/api/asset/file/789", http.StatusOK},
+		{"Other non-matching auth", "/api/auth/logout", http.StatusOK},
+		{"Server info other than stats", "/api/server-info/version", http.StatusOK},
+		{"Static assets", "/favicon.ico", http.StatusOK},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			rr := httptest.NewRecorder()
+
+			handler.ServeHTTP(rr, req)
+
+			if rr.Code != tc.expectedCode {
+				t.Errorf("Path %q: expected status %d, got %d", tc.path, tc.expectedCode, rr.Code)
+			}
+		})
 	}
 }
 

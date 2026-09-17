@@ -16,6 +16,9 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if !cfg.EnableDefaultPatterns {
 		t.Errorf("expected EnableDefaultPatterns to default to true")
 	}
+	if !cfg.EnableDefaultAllowPatterns {
+		t.Errorf("expected EnableDefaultAllowPatterns to default to true")
+	}
 	if cfg.StatusCode != http.StatusForbidden {
 		t.Errorf("expected StatusCode to default to %d, got %d", http.StatusForbidden, cfg.StatusCode)
 	}
@@ -25,8 +28,8 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if cfg.CheckQuery {
 		t.Errorf("expected CheckQuery to default to false")
 	}
-	if len(cfg.AllowPatterns) == 0 {
-		t.Errorf("expected default AllowPatterns to not be empty")
+	if len(cfg.AllowPatterns) != 0 {
+		t.Errorf("expected custom AllowPatterns to default to empty slice")
 	}
 	if len(cfg.AllowedIPs) != 0 {
 		t.Errorf("expected default AllowedIPs to be empty")

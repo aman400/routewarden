@@ -1,6 +1,8 @@
 package routewarden_test
 
 import (
+	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -229,6 +231,82 @@ func TestResponseHandler_DefaultTextAndEmptyFallbacks(t *testing.T) {
 
 	if !strings.Contains(rr4.Body.String(), "Custom Challenge - SiteKey: my-custom-key-999") {
 		t.Errorf("expected custom captcha template output, got %s", rr4.Body.String())
+	}
+}
+
+func TestResponseHandler_GzipBomb(t *testing.T) {
+	// 1. Test gzipBomb mode with default size (10MB)
+	cfg := &routewarden.ResponseConfig{
+		Mode:       "gzipBomb",
+		StatusCode: http.StatusOK,
+	}
+
+	handler, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected %d, got %d", http.StatusOK, rr.Code)
+	}
+	if rr.Header().Get("Content-Encoding") != "gzip" {
+		t.Errorf("expected Content-Encoding: gzip, got %s", rr.Header().Get("Content-Encoding"))
+	}
+	if !strings.Contains(rr.Header().Get("Content-Type"), "text/html") {
+		t.Errorf("expected text/html Content-Type, got %s", rr.Header().Get("Content-Type"))
+	}
+
+	// Verify the payload is valid gzip and expands
+	gzReader, err := gzip.NewReader(rr.Body)
+	if err != nil {
+		t.Fatalf("failed to create gzip reader from response: %v", err)
+	}
+	defer gzReader.Close()
+
+	// Read first 1MB of decompressed stream to verify it's zero bytes without exhausting test RAM
+	buf := make([]byte, 1024*1024)
+	n, err := io.ReadFull(gzReader, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		t.Fatalf("failed reading uncompressed stream: %v", err)
+	}
+	if n != len(buf) {
+		t.Errorf("expected to read at least 1MB of decompressed zeroes, read %d bytes", n)
+	}
+	for i := 0; i < 1024; i++ {
+		if buf[i] != 0 {
+			t.Errorf("expected byte 0 at pos %d, got %d", i, buf[i])
+			break
+		}
+	}
+
+	// 2. Test alias mode "bomb" with custom size and custom status code
+	cfgCustom := &routewarden.ResponseConfig{
+		Mode:        "bomb",
+		StatusCode:  http.StatusForbidden,
+		GzipBombMB:  2,
+		ContentType: "text/plain",
+	}
+
+	handlerCustom, err := routewarden.NewResponseHandler(cfgCustom, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	rrCustom := httptest.NewRecorder()
+	handlerCustom.ServeBlockedRequest(rrCustom, req)
+
+	if rrCustom.Code != http.StatusForbidden {
+		t.Errorf("expected %d, got %d", http.StatusForbidden, rrCustom.Code)
+	}
+	if rrCustom.Header().Get("Content-Encoding") != "gzip" {
+		t.Errorf("expected Content-Encoding: gzip")
+	}
+	if rrCustom.Header().Get("Content-Type") != "text/plain" {
+		t.Errorf("expected text/plain Content-Type, got %s", rrCustom.Header().Get("Content-Type"))
 	}
 }
 
