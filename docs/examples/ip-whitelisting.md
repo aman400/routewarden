@@ -95,7 +95,7 @@ services:
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
-      - "--experimental.plugins.routewarden.modulename=github.com/aman400/routewarden"
+      - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
       - "--experimental.plugins.routewarden.version={{version}}"
     ports:
       - "80:80"

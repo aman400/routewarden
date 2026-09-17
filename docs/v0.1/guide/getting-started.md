@@ -17,7 +17,7 @@ To read the documentation for the latest release, please switch to [Latest (v0.2
 experimental:
   plugins:
     routewarden:
-      moduleName: github.com/aman400/routewarden
+      moduleName: github.com/routewarden/traefik-warden
       version: v0.1.0
 ```
 

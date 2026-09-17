@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+# Prevents redundant builds: cancel previous runs on the same branch or PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Compute matrix based on event type:
+  # - PRs run against primary Go version (1.22) for ultra-fast checks without queue congestion
+  # - Merges/pushes to main & develop run full matrix (1.21, 1.22, 1.23)
+  detect-matrix:
+    name: Determine Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo 'matrix=["1.22"]' >> $GITHUB_OUTPUT
+          else
+            echo 'matrix=["1.21", "1.22", "1.23"]' >> $GITHUB_OUTPUT
+          fi
+
+  test-go:
+    name: Go (${{ matrix.go-version }})
+    needs: detect-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ${{ fromJSON(needs.detect-matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Run Go Tests with Race Detection
+        run: go test -v -race ./...
+
+      - name: Run Coverage Check
+        if: matrix.go-version == '1.22'
+        run: |
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+
+  test-docs-and-scripts:
+    name: Node Scripts & Docs Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Script Unit Tests
+        run: npm run test:scripts
+
+      - name: Verify Documentation Build
+        run: npm run docs:build
+
+  ci-success:
+    name: CI Status Check
+    needs: [test-go, test-docs-and-scripts]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish CI Results Summary
+        run: |
+          echo "## 🛡️ RouteWarden CI Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Go Tests & Race Detector** | ✅ Passed | Ran with \`-race\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Node Unit Tests** | ✅ Passed | Scripts and version synchronization tested |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Documentation Build** | ✅ Passed | VitePress client and server build verified |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **Ready for merge! All checks passed.**" >> $GITHUB_STEP_SUMMARY

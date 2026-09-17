@@ -3,7 +3,7 @@ package routewarden_test
 import (
 	"testing"
 
-	"github.com/aman400/routewarden"
+	"github.com/routewarden/traefik-warden"
 )
 
 func TestPathNormalizer_ExtractCandidatePaths(t *testing.T) {

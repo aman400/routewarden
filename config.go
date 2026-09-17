@@ -42,9 +42,14 @@ type ResponseConfig struct {
 	ContentType string            `json:"contentType,omitempty"` // Custom Content-Type header override
 	Body        string            `json:"body,omitempty"`        // Response payload (JSON string, HTML, or text)
 	Headers     map[string]string `json:"headers,omitempty"`     // Custom response headers (e.g. Retry-After, X-Blocked-By)
-	RedirectURL string            `json:"redirectUrl,omitempty"` // Target URL when Mode is "redirect"
-	Captcha     *CaptchaConfig    `json:"captcha,omitempty"`     // Captcha settings when Mode is "captcha"
-	GzipBombMB  int               `json:"gzipBombMB,omitempty"`  // Uncompressed size in Megabytes for gzipBomb mode (default: 10, ~10MB expands to ~10GB on client)
+	RedirectURL             string            `json:"redirectUrl,omitempty"`             // Target URL when Mode is "redirect"
+	ProxyURL                string            `json:"proxyUrl,omitempty"`                // Target backend honeypot URL when Mode is "proxy"
+	Captcha                 *CaptchaConfig    `json:"captcha,omitempty"`                 // Captcha settings when Mode is "captcha"
+	GzipBombMB              int               `json:"gzipBombMB,omitempty"`              // Uncompressed size in Megabytes for gzipBomb mode (default: 10)
+	RetryAfterSeconds       int               `json:"retryAfterSeconds,omitempty"`       // Seconds for Retry-After header when Mode is "rateLimitChallenge" (default: 300)
+	TarpitDelayMs           int               `json:"tarpitDelayMs,omitempty"`           // Milliseconds between bytes for tarpit mode (default: 1000)
+	TarpitMaxDurationSeconds int              `json:"tarpitMaxDurationSeconds,omitempty"`// Max seconds before terminating tarpit connection (default: 60)
+	StreamSizeMB            int               `json:"streamSizeMB,omitempty"`            // Size in Megabytes for infiniteStream/garbageStream mode (default: 100)
 }
 
 // Config holds the plugin configuration.
