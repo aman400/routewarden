@@ -730,3 +730,112 @@ func TestRouteWarden_WildcardAndPrefixPatterns(t *testing.T) {
 	}
 }
 
+func TestRouteWarden_Methods(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("PASSED"))
+	})
+
+	t.Run("Default inspects only GET", func(t *testing.T) {
+		cfg := routewarden.CreateConfig()
+		handler, err := routewarden.New(context.Background(), next, cfg, "methods-default")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// GET /.env should be blocked
+		reqGet := httptest.NewRequest(http.MethodGet, "/.env", nil)
+		rrGet := httptest.NewRecorder()
+		handler.ServeHTTP(rrGet, reqGet)
+		if rrGet.Code != http.StatusForbidden {
+			t.Errorf("expected GET /.env to be 403, got %d", rrGet.Code)
+		}
+
+		// POST /.env should bypass inspection and pass through
+		reqPost := httptest.NewRequest(http.MethodPost, "/.env", nil)
+		rrPost := httptest.NewRecorder()
+		handler.ServeHTTP(rrPost, reqPost)
+		if rrPost.Code != http.StatusOK {
+			t.Errorf("expected POST /.env to bypass inspection and return 200, got %d", rrPost.Code)
+		}
+
+		// PUT, DELETE, PATCH should also bypass
+		for _, method := range []string{http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodHead} {
+			req := httptest.NewRequest(method, "/.env", nil)
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+			if rr.Code != http.StatusOK {
+				t.Errorf("expected %s /.env to bypass inspection and return 200, got %d", method, rr.Code)
+			}
+		}
+	})
+
+	t.Run("Custom methods GET and POST", func(t *testing.T) {
+		cfg := routewarden.CreateConfig()
+		cfg.Methods = []string{"GET", "POST"}
+		handler, err := routewarden.New(context.Background(), next, cfg, "methods-get-post")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Both GET and POST to sensitive path should be blocked
+		for _, method := range []string{http.MethodGet, http.MethodPost} {
+			req := httptest.NewRequest(method, "/.env", nil)
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+			if rr.Code != http.StatusForbidden {
+				t.Errorf("expected %s /.env to be 403, got %d", method, rr.Code)
+			}
+		}
+
+		// DELETE should bypass
+		reqDel := httptest.NewRequest(http.MethodDelete, "/.env", nil)
+		rrDel := httptest.NewRecorder()
+		handler.ServeHTTP(rrDel, reqDel)
+		if rrDel.Code != http.StatusOK {
+			t.Errorf("expected DELETE /.env to return 200, got %d", rrDel.Code)
+		}
+	})
+
+	t.Run("Case-insensitive and empty fallback", func(t *testing.T) {
+		cfg := routewarden.CreateConfig()
+		cfg.Methods = []string{"post", "delete"}
+		handler, err := routewarden.New(context.Background(), next, cfg, "methods-case")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// POST should be blocked
+		reqPost := httptest.NewRequest(http.MethodPost, "/.env", nil)
+		rrPost := httptest.NewRecorder()
+		handler.ServeHTTP(rrPost, reqPost)
+		if rrPost.Code != http.StatusForbidden {
+			t.Errorf("expected POST /.env to be 403, got %d", rrPost.Code)
+		}
+
+		// GET should bypass
+		reqGet := httptest.NewRequest(http.MethodGet, "/.env", nil)
+		rrGet := httptest.NewRecorder()
+		handler.ServeHTTP(rrGet, reqGet)
+		if rrGet.Code != http.StatusOK {
+			t.Errorf("expected GET /.env to return 200, got %d", rrGet.Code)
+		}
+
+		// Empty slice defaults to GET
+		cfgEmpty := routewarden.CreateConfig()
+		cfgEmpty.Methods = []string{}
+		handlerEmpty, err := routewarden.New(context.Background(), next, cfgEmpty, "methods-empty")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		reqGet2 := httptest.NewRequest(http.MethodGet, "/.env", nil)
+		rrGet2 := httptest.NewRecorder()
+		handlerEmpty.ServeHTTP(rrGet2, reqGet2)
+		if rrGet2.Code != http.StatusForbidden {
+			t.Errorf("expected GET /.env with empty Methods to default to 403, got %d", rrGet2.Code)
+		}
+	})
+}
+
+
