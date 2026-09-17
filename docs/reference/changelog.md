@@ -57,6 +57,10 @@ The `v0.2.x` release series introduces CIDR/IP whitelisting, comprehensive anti-
   - Mobile-optimized table horizontal scrolling and single-column responsive card layouts.
 - **SEO & Social Preview Metadata**:
   - Added OpenGraph (`og:title`, `og:description`, `og:image`, `og:url`) and Twitter Card metadata to documentation pages.
+- **Gzip Bomb Active Defense Mode (`mode: gzipBomb` / `mode: bomb`)**:
+  - Added native decompression bomb response mode for active bot and vulnerability scanner neutralization.
+  - Serves an HTTP 200/403 response with `Content-Encoding: gzip` streaming compressed zeroes using Go's `compress/gzip` with best compression.
+  - Configurable `gzipBombMB` option (defaults to 10MB, requiring negligible server bandwidth while expanding to ~10GB in client memory, triggering OOM crashes on crawlers and scanners).
 - **Static High-Resolution Icon**:
   - Rendered crisp 512×512 PNG asset (`assets/icon.png` and `docs/public/icon.png`) derived from the animated SVG vector.
 

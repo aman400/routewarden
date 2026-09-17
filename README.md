@@ -149,8 +149,8 @@ http:
 | `allowPatterns` | `[]string` | `[]` | Custom safe regex overrides to always allow. |
 | `allowedIps` | `[]string` | `[]` | Whitelisted IPv4/IPv6 addresses or CIDR subnets (e.g. `127.0.0.1`, `10.0.0.0/8`). |
 | `checkQuery` | `bool` | `false` | Also inspect query parameters for blocked patterns. |
-| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"captcha"`, `"redirect"`, or `"silentDrop"`. |
-| `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`). |
+| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"captcha"`, `"redirect"`, `"silentDrop"`, or `"gzipBomb"`. |
+| `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
 
 > 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://aman400.github.io/routewarden/reference/configuration)**.

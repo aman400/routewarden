@@ -37,12 +37,13 @@ By default, RouteWarden allows standard public informational files and ACME cert
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `mode` | `string` | `"json"` | Response mode: `json`, `html`, `captcha`, `redirect`, `text`, or `silentDrop`. |
-| `statusCode` | `int` | `403` | HTTP status code returned to client. |
+| `mode` | `string` | `"json"` | Response mode: `json`, `html`, `captcha`, `redirect`, `text`, `silentDrop`, or `gzipBomb` (alias: `bomb`). |
+| `statusCode` | `int` | `403` | HTTP status code returned to client (use `200` for honeypots / deception). |
 | `body` | `string` | `""` | Response body for `json`, `html`, or `text` mode. |
 | `headers` | `map[string]string` | `{}` | Custom HTTP response headers injected into blocked responses. |
 | `redirectUrl` | `string` | `""` | Target URL when `mode: redirect`. |
 | `captcha` | `object` | `{}` | Captcha challenge options when `mode: captcha`. |
+| `gzipBombMB` | `int` | `10` | Uncompressed stream size in Megabytes when `mode: gzipBomb` (streams compressed zeroes over wire, expanding ~1000x on client memory). |
 
 ### Captcha Options (`response.captcha`)
 

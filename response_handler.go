@@ -2,6 +2,7 @@ package routewarden
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -254,6 +255,43 @@ func (h *ResponseHandler) ServeBlockedRequest(w http.ResponseWriter, req *http.R
 			}
 		}
 		_, _ = fmt.Fprintln(w, "Security Challenge Required")
+
+	case "gzipbomb", "bomb":
+		contentType := h.config.ContentType
+		if contentType == "" {
+			contentType = "text/html; charset=UTF-8"
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(h.config.StatusCode)
+
+		// Size in MB to generate. Each 1MB of zero-bytes compresses to ~1KB in gzip,
+		// expanding ~1000x on the client during decompression.
+		targetMB := h.config.GzipBombMB
+		if targetMB <= 0 {
+			targetMB = 10 // Default: 10MB expands to ~10GB on decompression
+		}
+
+		gz, err := gzip.NewWriterLevel(w, gzip.BestCompression)
+		if err != nil {
+			gz = gzip.NewWriter(w)
+		}
+		defer gz.Close()
+
+		// Stream 32KB zero chunks through gzip writer
+		zeroChunk := make([]byte, 32*1024)
+		totalChunks := (targetMB * 1024 * 1024) / len(zeroChunk)
+		if totalChunks <= 0 {
+			totalChunks = 32
+		}
+
+		for i := 0; i < totalChunks; i++ {
+			if _, err := gz.Write(zeroChunk); err != nil {
+				// Client hung up, timed out, or crashed due to memory exhaustion
+				break
+			}
+		}
 
 	default: // "text"
 		contentType := h.config.ContentType

@@ -83,3 +83,33 @@ http:
             statusCode: 404
             body: '{"error":"Not Found"}'
 ```
+
+---
+
+## Strategy D: Active Defense with Gzip Bomb (`mode: gzipBomb`)
+
+When automated reconnaissance scanners (`nikto`, `gobuster`, `dirsearch`, or credential stuffers) probe for sensitive configuration files (`.env`, `wp-config.php`, `/actuator/env`), returning a 403/404 allows them to swiftly move to the next URL on their wordlist.
+
+With RouteWarden's `gzipBomb` mode (alias: `bomb`), the middleware serves a **valid HTTP 200 response with `Content-Encoding: gzip`** consisting of a stream of compressed zero bytes. 
+
+```yaml
+http:
+  middlewares:
+    honeypot-bomber:
+      plugin:
+        routewarden:
+          enabled: true
+          pathPatterns:
+            # Lure crawlers scanning for high-value targets
+            - '(?i)(^|/)(\.env.*|\.git.*|wp-login\.php|phpmyadmin.*)$'
+          response:
+            mode: gzipBomb         # Alias: "bomb"
+            statusCode: 200        # Looks like a jackpot 200 OK to the crawler
+            gzipBombMB: 10         # 10MB uncompressed expands ~1000x to ~10GB in client memory
+```
+
+### How the Gzip Bomb Neutralizes Scanners:
+1. **Negligible Server Cost**: The server streams compressed zeroes via Traefik. Transmitting a 10 MB payload over the wire requires only a few kilobytes of bandwidth and tiny CPU cycles.
+2. **Client Memory Exhaustion (OOM)**: Most automated crawler libraries (`requests`, `urllib3`, Go/Python scrapers) auto-decompress gzip responses in RAM. When the stream expands to 10+ GB, the attacker's crawler crashes from out-of-memory errors or locks up its worker pool.
+3. **Scan Halting**: The attacker's scanning process terminates, preventing further probing across your infrastructure.
+

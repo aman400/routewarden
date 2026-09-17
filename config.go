@@ -44,6 +44,7 @@ type ResponseConfig struct {
 	Headers     map[string]string `json:"headers,omitempty"`     // Custom response headers (e.g. Retry-After, X-Blocked-By)
 	RedirectURL string            `json:"redirectUrl,omitempty"` // Target URL when Mode is "redirect"
 	Captcha     *CaptchaConfig    `json:"captcha,omitempty"`     // Captcha settings when Mode is "captcha"
+	GzipBombMB  int               `json:"gzipBombMB,omitempty"`  // Uncompressed size in Megabytes for gzipBomb mode (default: 10, ~10MB expands to ~10GB on client)
 }
 
 // Config holds the plugin configuration.
