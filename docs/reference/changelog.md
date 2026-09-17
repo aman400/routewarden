@@ -46,7 +46,7 @@ The `v0.2.x` release series introduces CIDR/IP whitelisting, comprehensive anti-
     - **Prometheus & Spring Boot Actuator Cloaking**: VPN/LAN restriction of metrics, diagnostics, and management ports without exposing sensitive internal metadata.
     - **WordPress & CMS Admin Shielding**: Hardening `wp-login.php`, `xmlrpc.php`, and brute-force endpoints with dynamic IP bypass or CAPTCHA challenge.
     - **Vaultwarden Admin Lockdown**: Completely severing exposure of `/admin` endpoints while keeping password synchronization functional across mobile and browser clients.
-    - **Honeypot Deflection, Silent Drops & Staging Cloaking**: Deceiving automated vulnerability crawlers using HTTP 200 decoy responses, connection resets via `silentDrop`, and staging environment cloaking.
+    - **Honeypot Deflection, Silent Drops & Active Defense**: Deceiving automated vulnerability crawlers using HTTP 200 decoy responses, connection resets via `silentDrop`, active crawler neutralization via `gzipBomb`, and staging environment cloaking.
 - **Dedicated Top Navigation & Homepage Discovery**:
   - Promoted "Case Studies" to the top navigation bar and sidebar in VitePress.
   - Added an interactive visual card grid on the documentation homepage highlighting key architectures and real-world threat protections.
