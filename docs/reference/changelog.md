@@ -32,6 +32,53 @@ The `v0.2.x` release series introduces CIDR/IP whitelisting, comprehensive anti-
 | **Test Suite Coverage** | ~60% basic tests | **92.6% statement coverage** | Per-component isolation tests with Yaegi conformance and race detection. |
 | **Documentation** | Readme only | Interactive VitePress Wiki + Version Switching | Live searchable documentation with unified code tabs and live examples. |
 
+### [v0.2.3] - 2026-09-17
+
+#### Added
+- **Configurable Default Whitelist Flag (`enableDefaultAllowPatterns`)**:
+  - Added `enableDefaultAllowPatterns` configuration flag (boolean, defaults to `true`).
+  - When set to `false`, RouteWarden disables the built-in public whitelist (`/robots.txt`, `/sitemap.xml`, `/ads.txt`, `/security.txt`, and `/.well-known/*`), giving operators total zero-trust control over allowlists.
+  - Retains backward compatibility where built-in paths remain automatically permitted by default.
+- **Production Case Studies Suite (`docs/examples/`)**:
+  - Added 6 in-depth architectural production case studies with Traefik configurations and threat model breakdowns:
+    - **Dual-Router Immich Photo Sharing**: Exposing public sharing while cloaking internal administration and microservices (with Traefik routing rules and Immich external domain configuration).
+    - **Zero-Trust Stripe & GitHub Webhook Ingress**: Locking down webhook receivers with payload inspection bypass while silently cloaking other paths.
+    - **Prometheus & Spring Boot Actuator Cloaking**: VPN/LAN restriction of metrics, diagnostics, and management ports without exposing sensitive internal metadata.
+    - **WordPress & CMS Admin Shielding**: Hardening `wp-login.php`, `xmlrpc.php`, and brute-force endpoints with dynamic IP bypass or CAPTCHA challenge.
+    - **Vaultwarden Admin Lockdown**: Completely severing exposure of `/admin` endpoints while keeping password synchronization functional across mobile and browser clients.
+    - **Honeypot Deflection, Silent Drops & Staging Cloaking**: Deceiving automated vulnerability crawlers using HTTP 200 decoy responses, connection resets via `silentDrop`, and staging environment cloaking.
+- **Dedicated Top Navigation & Homepage Discovery**:
+  - Promoted "Case Studies" to the top navigation bar and sidebar in VitePress.
+  - Added an interactive visual card grid on the documentation homepage highlighting key architectures and real-world threat protections.
+- **Wildcard & Regex Subpath Pattern Conformance**:
+  - Expanded test coverage and documentation on regex subpath matching (e.g., prefix anchors `^/api/users.*$`, exact paths, and query string separation).
+- **Mobile Responsive Design Improvements**:
+  - Compact collapsible search icon button on mobile screens (`<768px`) to prevent navigation clipping.
+  - Mobile-optimized table horizontal scrolling and single-column responsive card layouts.
+- **SEO & Social Preview Metadata**:
+  - Added OpenGraph (`og:title`, `og:description`, `og:image`, `og:url`) and Twitter Card metadata to documentation pages.
+- **Static High-Resolution Icon**:
+  - Rendered crisp 512×512 PNG asset (`assets/icon.png` and `docs/public/icon.png`) derived from the animated SVG vector.
+
+#### Changed
+- Enhanced `routewarden_test.go` and `config_test.go` with test assertions for `enableDefaultAllowPatterns` and wildcard patterns.
+
+---
+
+### [v0.2.2] - 2026-09-16
+
+#### Added
+- **Version Management & Snapshot Tooling**:
+  - Added `VERSIONING.md` documenting RouteWarden's version lifecycle and documentation snapshotting process.
+  - Automated Node.js scripts (`scripts/sync-version.mjs`, `scripts/snapshot-version.mjs`) with automated unit testing (`tests/scripts.test.mjs`).
+  - Added version switcher supporting both current and snapshot versions (`docs/versions.json`).
+- **Synchronized Multi-Format Configuration Tabs**:
+  - Interactive multi-tab selector component synchronized across pages (YAML, TOML, Docker CLI, and K8s CRD).
+
+#### Changed
+- Consolidated root changelog and versioning documentation within `docs/reference/changelog.md`.
+- Updated all reference guides and example Docker Compose files to reference `v0.2.2`.
+
 ---
 
 ### [v0.2.1] - 2026-09-16

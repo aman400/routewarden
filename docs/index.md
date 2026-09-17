@@ -208,20 +208,36 @@ http:
 
 ---
 
-## Featured Case Study: Dual-Router Security (Immich)
+## Production Case Studies
 
-Want to share self-hosted photos or media publicly without exposing administrative or authentication interfaces?
+Real-world deployment patterns demonstrating how engineering teams and self-hosters protect their applications using RouteWarden:
 
-With RouteWarden, you can deploy **two Traefik routers pointing to the same upstream application**:
-1. **Private Router (over VPN / LAN)**: Full access to all endpoints, user management, and administrative dashboards.
-2. **Public Router (Internet)**: Exposes public photo/album sharing (`/share/*`), while **RouteWarden intercepts and blocks** critical sensitive APIs:
-   - `^/api/auth/login.*$` *(prevents credential stuffing)*
-   - `^/api/auth/admin-sign-up.*$` *(prevents unauthorized account creation)*
-   - `^/api/users.*$` *(prevents user enumeration)*
-   - `^/api/admin.*$` *(prevents administrative tampering)*
-   - `^/api/server-info/stats.*$` *(prevents topology reconnaissance)*
-
-👉 **[Read the Full Immich Dual-Router Case Study ➔](/examples/case-study-immich)**
+<div class="attack-grid">
+  <div class="attack-card">
+    <h4>📸 <a href="/examples/case-study-immich">Immich Photo Sharing</a></h4>
+    <p>Public photo/album sharing while strictly cloaking administrative, login, and user management APIs under a 404.</p>
+  </div>
+  <div class="attack-card">
+    <h4>💳 <a href="/examples/case-study-webhooks">Zero-Trust Webhooks</a></h4>
+    <p>Lock down Stripe/GitHub payment webhook ingress using official provider IP CIDRs and silent TCP drops.</p>
+  </div>
+  <div class="attack-card">
+    <h4>📊 <a href="/examples/case-study-observability">Metrics & Actuator Cloaking</a></h4>
+    <p>Shield Prometheus <code>/metrics</code> and Spring Boot <code>/actuator</code> from public scanners while keeping internal scrapers active.</p>
+  </div>
+  <div class="attack-card">
+    <h4>📝 <a href="/examples/case-study-cms-shield">WordPress & CMS Shield</a></h4>
+    <p>Defeat brute-force and XML-RPC attacks on <code>wp-login.php</code> using interactive Cloudflare Turnstile / hCaptcha challenges.</p>
+  </div>
+  <div class="attack-card">
+    <h4>🔐 <a href="/examples/case-study-vaultwarden">Password Vaults (Bitwarden)</a></h4>
+    <p>Allow public mobile password sync while restricting <code>/admin</code> strictly to WireGuard or Tailscale subnets.</p>
+  </div>
+  <div class="attack-card">
+    <h4>🪤 <a href="/examples/case-study-honeypot-staging">Honeypots & Staging Cloak</a></h4>
+    <p>Reset scanner TCP connections with <code>silentDrop</code> and hide pull-request preview clusters from search engines.</p>
+  </div>
+</div>
 
 ---
 
@@ -230,5 +246,5 @@ With RouteWarden, you can deploy **two Traefik routers pointing to the same upst
 - Check out the [Getting Started Guide](/guide/getting-started) for step-by-step installation instructions.
 - Learn about the [System Architecture](/guide/architecture) and how RouteWarden processes requests.
 - Explore the [Examples Cookbook](/examples/overview) for Docker Compose and Kubernetes manifests.
-- Read the [Dual-Router Case Study](/examples/case-study-immich) for practical production shielding.
+- Browse all [Production Case Studies](/examples/case-study-immich) for practical production blueprints.
 - Read the [Anti-Evasion Security Deep Dive](/reference/anti-evasion) for security test results.

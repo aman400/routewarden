@@ -121,7 +121,12 @@ export default defineConfig({
           text: 'Case Studies',
           collapsed: false,
           items: [
-            { text: 'Immich: Dual-Router Security', link: '/examples/case-study-immich' }
+            { text: '1. Immich: Dual-Router Security', link: '/examples/case-study-immich' },
+            { text: '2. Zero-Trust Webhook Ingress', link: '/examples/case-study-webhooks' },
+            { text: '3. Observability & Metrics Cloaking', link: '/examples/case-study-observability' },
+            { text: '4. CMS & WordPress Shielding', link: '/examples/case-study-cms-shield' },
+            { text: '5. Password Vaults (Vaultwarden)', link: '/examples/case-study-vaultwarden' },
+            { text: '6. Honeypots & Staging Cloaking', link: '/examples/case-study-honeypot-staging' }
           ]
         }
       ]
