@@ -31,7 +31,7 @@ features:
     details: Bypass blocking for corporate VPNs, office IPs, or developer subnets with support for X-Forwarded-For, X-Real-IP, and socket RemoteAddr.
   - icon: 🎭
     title: Multi-Mode Response Engine
-    details: Custom JSON payloads, branded HTML 404/403 pages, Cloudflare Turnstile/hCaptcha verification challenges, URL redirects, or silent drops.
+    details: Custom JSON payloads, branded HTML 404/403 pages, Cloudflare Turnstile/hCaptcha verification challenges, URL redirects, silent drops, or active defense gzip bombs.
   - icon: 🚀
     title: Pure Go & Yaegi Native
     details: Zero third-party dependencies outside the Go standard library. 100% compliant with Traefik's Yaegi interpreter.
@@ -71,7 +71,7 @@ RouteWarden evaluates every inbound HTTP request across four deterministic secur
   <div class="pipeline-step">
     <div class="pipeline-num">Stage 4</div>
     <div class="pipeline-title">Multi-Action Response</div>
-    <div class="pipeline-desc">Emits custom JSON, branded HTML, redirect honeypots, silent TCP drops, or interactive <b>Cloudflare Turnstile</b> / <b>hCaptcha</b> challenges.</div>
+    <div class="pipeline-desc">Emits custom JSON, branded HTML, redirect honeypots, silent TCP drops, interactive <b>Cloudflare Turnstile</b> / <b>hCaptcha</b> challenges, or active defense <b>Gzip Bombs</b>.</div>
   </div>
 </div>
 
@@ -125,6 +125,24 @@ When a sensitive route is intercepted, you decide how Traefik responds to the cl
 - **`captcha`**: Present human verification challenges using **Cloudflare Turnstile**, **hCaptcha**, or **Google reCAPTCHA** without needing any backend captcha server.
 - **`redirect`**: Silently deflect attackers to a honeypot, logging sink, or warning site.
 - **`silentDrop`**: Close the TCP connection immediately without emitting any response payload to confuse automated port scanners.
+- **`gzipBomb`** *(alias: `bomb`)*: Stream compressed zero-byte blocks that expand ~1000× (e.g. 10 MB expands to ~10 GB in client RAM) with negligible server bandwidth, forcing memory exhaustion (OOM) on vulnerability crawlers (`nikto`, `gobuster`, `dirsearch`).
+
+<div class="bomb-callout">
+  <div class="bomb-callout-header">
+    <span class="bomb-badge">Active Defense</span>
+    <h3 class="bomb-callout-title">💣 Gzip Bomb Mode (Bot Counter-Offensive)</h3>
+  </div>
+  <p class="bomb-callout-body">
+    Tired of vulnerability scanners filling your logs? When an unauthorized bot scans for <code>.env</code>, <code>.git</code>, or <code>wp-login.php</code>, RouteWarden can return an enticing <code>200 OK</code> response with <code>Content-Encoding: gzip</code>. The tiny wire stream expands <b>~1000x in the crawler's memory</b> (10 MB expands to ~10 GB), triggering an immediate Out-Of-Memory (OOM) crash in scanning tools like <code>dirsearch</code>, <code>nikto</code>, or Python-based scrapers without consuming server resources.
+  </p>
+  <div class="bomb-callout-code">
+    response: { mode: "gzipBomb", statusCode: 200, gzipBombMB: 10 }
+  </div>
+  <div class="bomb-callout-warning">
+    <span>⚠️</span>
+    <span><strong>Caution with Search Engines:</strong> Never attach <code>gzipBomb</code> globally or to legitimate content URLs. Standard web browsers and legitimate search engine spiders (Googlebot, Bingbot) decompress gzip streams automatically. Only target high-confidence malicious probe endpoints (e.g. <code>/.env</code>, <code>/.git</code>, <code>wp-login.php</code>) and ensure <code>enableDefaultAllowPatterns: true</code> remains active so <code>/robots.txt</code> and <code>/sitemap.xml</code> are never bombed.</span>
+  </div>
+</div>
 
 ---
 
@@ -234,8 +252,8 @@ Real-world deployment patterns demonstrating how engineering teams and self-host
     <p>Allow public mobile password sync while restricting <code>/admin</code> strictly to WireGuard or Tailscale subnets.</p>
   </div>
   <div class="attack-card">
-    <h4>🪤 <a href="/examples/case-study-honeypot-staging">Honeypots & Staging Cloak</a></h4>
-    <p>Reset scanner TCP connections with <code>silentDrop</code> and hide pull-request preview clusters from search engines.</p>
+    <h4>💣 <a href="/examples/case-study-honeypot-staging">Honeypots & Active Gzip Bomb</a></h4>
+    <p>Crash scanning bots with <code>gzipBomb</code> decompression traps, reset TCP connections with <code>silentDrop</code>, and cloak staging preview clusters.</p>
   </div>
 </div>
 
