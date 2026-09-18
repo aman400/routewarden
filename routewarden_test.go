@@ -1,4 +1,4 @@
-package routewarden_test
+package traefik_warden_test
 
 import (
 	"context"
@@ -11,13 +11,13 @@ import (
 )
 
 func TestRouteWarden_Defaults(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "routewarden-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "routewarden-test")
 	if err != nil {
 		t.Fatalf("unexpected error initializing plugin: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestRouteWarden_Defaults(t *testing.T) {
 }
 
 func TestRouteWarden_CustomBlockPatterns(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.EnableDefaultPatterns = false
 	// Add user's exact requested pattern
 	cfg.BlockPatterns = []string{
@@ -97,7 +97,7 @@ func TestRouteWarden_CustomBlockPatterns(t *testing.T) {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "custom-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "custom-test")
 	if err != nil {
 		t.Fatalf("unexpected error initializing plugin: %v", err)
 	}
@@ -136,9 +136,9 @@ func TestRouteWarden_CustomBlockPatterns(t *testing.T) {
 }
 
 func TestRouteWarden_JSONResponse(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.PathPatterns = []string{`^/api/admin/.*`}
-	cfg.Response = &routewarden.ResponseConfig{
+	cfg.Response = &traefik_warden.ResponseConfig{
 		Mode:       "json",
 		StatusCode: http.StatusTeapot, // 418 or 403 / 429
 		Body:       `{"error":"unauthorized_resource","status":418,"success":false}`,
@@ -151,7 +151,7 @@ func TestRouteWarden_JSONResponse(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "json-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "json-test")
 	if err != nil {
 		t.Fatalf("failed to create handler: %v", err)
 	}
@@ -180,9 +180,9 @@ func TestRouteWarden_JSONResponse(t *testing.T) {
 }
 
 func TestRouteWarden_HTMLResponse(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.PathPatterns = []string{`(?i)^/admin/login`}
-	cfg.Response = &routewarden.ResponseConfig{
+	cfg.Response = &traefik_warden.ResponseConfig{
 		Mode:       "html",
 		StatusCode: http.StatusForbidden,
 		Body:       `<!DOCTYPE html><html><body><h1>Access Denied</h1><p>Restricted area.</p></body></html>`,
@@ -192,7 +192,7 @@ func TestRouteWarden_HTMLResponse(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "html-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "html-test")
 	if err != nil {
 		t.Fatalf("failed to create handler: %v", err)
 	}
@@ -228,12 +228,12 @@ func TestRouteWarden_CaptchaResponse(t *testing.T) {
 
 	for _, p := range providers {
 		t.Run(p.provider, func(t *testing.T) {
-			cfg := routewarden.CreateConfig()
+			cfg := traefik_warden.CreateConfig()
 			cfg.PathPatterns = []string{`^/login`}
-			cfg.Response = &routewarden.ResponseConfig{
+			cfg.Response = &traefik_warden.ResponseConfig{
 				Mode:       "captcha",
 				StatusCode: http.StatusForbidden,
-				Captcha: &routewarden.CaptchaConfig{
+				Captcha: &traefik_warden.CaptchaConfig{
 					Provider: p.provider,
 					SiteKey:  "0x4AAAAAAtestkey123",
 					Title:    "Custom Security Check",
@@ -241,7 +241,7 @@ func TestRouteWarden_CaptchaResponse(t *testing.T) {
 			}
 
 			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-			handler, err := routewarden.New(context.Background(), next, cfg, "captcha-test")
+			handler, err := traefik_warden.New(context.Background(), next, cfg, "captcha-test")
 			if err != nil {
 				t.Fatalf("failed to create handler: %v", err)
 			}
@@ -269,16 +269,16 @@ func TestRouteWarden_CaptchaResponse(t *testing.T) {
 }
 
 func TestRouteWarden_RedirectResponse(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.PathPatterns = []string{`^/trap`}
-	cfg.Response = &routewarden.ResponseConfig{
+	cfg.Response = &traefik_warden.ResponseConfig{
 		Mode:        "redirect",
 		StatusCode:  http.StatusTemporaryRedirect, // 307
 		RedirectURL: "https://example.com/blocked",
 	}
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	handler, err := routewarden.New(context.Background(), next, cfg, "redirect-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "redirect-test")
 	if err != nil {
 		t.Fatalf("failed to create handler: %v", err)
 	}
@@ -303,7 +303,7 @@ func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
 	})
 
 	t.Run("Allowlist supersedes both default and custom block patterns", func(t *testing.T) {
-		cfg := routewarden.CreateConfig()
+		cfg := traefik_warden.CreateConfig()
 		cfg.EnableDefaultPatterns = true
 		cfg.EnableDefaultAllowPatterns = true
 		cfg.PathPatterns = []string{`(?i)^/api/.*$`}
@@ -312,7 +312,7 @@ func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
 			`(?i)^/public/.*\.txt$`,
 		}
 
-		handler, err := routewarden.New(context.Background(), next, cfg, "allow-override-test")
+		handler, err := traefik_warden.New(context.Background(), next, cfg, "allow-override-test")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -363,11 +363,11 @@ func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
 	})
 
 	t.Run("Disabling default allow patterns removes exemption", func(t *testing.T) {
-		cfg := routewarden.CreateConfig()
+		cfg := traefik_warden.CreateConfig()
 		cfg.EnableDefaultPatterns = true
 		cfg.EnableDefaultAllowPatterns = false
 
-		handler, err := routewarden.New(context.Background(), next, cfg, "disable-default-allow")
+		handler, err := traefik_warden.New(context.Background(), next, cfg, "disable-default-allow")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -385,7 +385,7 @@ func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
 func TestRouteWarden_DisableDefaultAllowPatterns(t *testing.T) {
 	// When EnableDefaultAllowPatterns is false, standard paths like /robots.txt or /security.txt
 	// that match a block rule will NOT be exempted.
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.EnableDefaultAllowPatterns = false
 	// Block all .txt files
 	cfg.PathPatterns = []string{`(?i).*\.txt$`}
@@ -394,7 +394,7 @@ func TestRouteWarden_DisableDefaultAllowPatterns(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "disable-default-allow-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "disable-default-allow-test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -417,14 +417,14 @@ func TestRouteWarden_DisableDefaultAllowPatterns(t *testing.T) {
 }
 
 func TestRouteWarden_CheckQuery(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.CheckQuery = true
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "query-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "query-test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -438,14 +438,14 @@ func TestRouteWarden_CheckQuery(t *testing.T) {
 }
 
 func TestRouteWarden_Disabled(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.Enabled = false
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "disabled-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "disabled-test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -459,24 +459,24 @@ func TestRouteWarden_Disabled(t *testing.T) {
 }
 
 func TestRouteWarden_InvalidRegex(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.BlockPatterns = []string{"(unclosed parenthesis"}
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
-	_, err := routewarden.New(context.Background(), next, cfg, "error-test")
+	_, err := traefik_warden.New(context.Background(), next, cfg, "error-test")
 	if err == nil {
 		t.Errorf("expected error for invalid regex pattern, got nil")
 	}
 }
 
 func TestRouteWarden_InvalidAllowRegex(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.AllowPatterns = []string{"[unclosed bracket"}
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
-	_, err := routewarden.New(context.Background(), next, cfg, "allow-error-test")
+	_, err := traefik_warden.New(context.Background(), next, cfg, "allow-error-test")
 	if err == nil {
 		t.Errorf("expected error for invalid allow regex pattern, got nil")
 	}
@@ -487,7 +487,7 @@ func TestRouteWarden_NilConfig(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, nil, "nil-config-test")
+	handler, err := traefik_warden.New(context.Background(), next, nil, "nil-config-test")
 	if err != nil {
 		t.Fatalf("unexpected error initializing with nil config: %v", err)
 	}
@@ -502,27 +502,27 @@ func TestRouteWarden_NilConfig(t *testing.T) {
 }
 
 func TestRouteWarden_InvalidResponseConfig(t *testing.T) {
-	cfg := routewarden.CreateConfig()
-	cfg.Response = &routewarden.ResponseConfig{
+	cfg := traefik_warden.CreateConfig()
+	cfg.Response = &traefik_warden.ResponseConfig{
 		Mode:     "proxy",
 		ProxyURL: "://invalid-url",
 	}
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	_, err := routewarden.New(context.Background(), next, cfg, "resp-error-test")
+	_, err := traefik_warden.New(context.Background(), next, cfg, "resp-error-test")
 	if err == nil {
 		t.Errorf("expected error initializing with invalid proxy url")
 	}
 }
 
 func TestRouteWarden_SecurityEvasionVectors(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("SHOULD NOT BE REACHED"))
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "security-evasion-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "security-evasion-test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -571,7 +571,7 @@ func TestRouteWarden_SecurityEvasionVectors(t *testing.T) {
 }
 
 func TestRouteWarden_SilentDrop(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.SilentDrop = true
 	cfg.StatusCode = http.StatusForbidden
 
@@ -579,7 +579,7 @@ func TestRouteWarden_SilentDrop(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "silent-drop-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "silent-drop-test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -598,7 +598,7 @@ func TestRouteWarden_SilentDrop(t *testing.T) {
 }
 
 func TestRouteWarden_IPWhitelist(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.AllowedIPs = []string{
 		"192.168.1.50",       // Exact IP
 		"10.0.0.0/24",        // CIDR subnet
@@ -610,7 +610,7 @@ func TestRouteWarden_IPWhitelist(t *testing.T) {
 		_, _ = w.Write([]byte("ALLOWED"))
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "ip-whitelist-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "ip-whitelist-test")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -685,25 +685,25 @@ func TestRouteWarden_IPWhitelist(t *testing.T) {
 }
 
 func TestRouteWarden_InvalidAllowedIPs(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.AllowedIPs = []string{"not-an-ip-or-cidr"}
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	_, err := routewarden.New(context.Background(), next, cfg, "invalid-ip-test")
+	_, err := traefik_warden.New(context.Background(), next, cfg, "invalid-ip-test")
 	if err == nil {
 		t.Errorf("expected error on invalid IP format, got nil")
 	}
 
-	cfg2 := routewarden.CreateConfig()
+	cfg2 := traefik_warden.CreateConfig()
 	cfg2.AllowedIPs = []string{"10.0.0.0/99"} // invalid CIDR mask
-	_, err2 := routewarden.New(context.Background(), next, cfg2, "invalid-cidr-test")
+	_, err2 := traefik_warden.New(context.Background(), next, cfg2, "invalid-cidr-test")
 	if err2 == nil {
 		t.Errorf("expected error on invalid CIDR mask, got nil")
 	}
 }
 
 func TestRouteWarden_WildcardAndPrefixPatterns(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.EnableDefaultPatterns = false
 	// Real-world API wildcard and prefix patterns (like Immich, admin dashboards, etc.)
 	cfg.PathPatterns = []string{
@@ -714,7 +714,7 @@ func TestRouteWarden_WildcardAndPrefixPatterns(t *testing.T) {
 		`(?i)^/api/server-info/stats.*$`,
 		`(?i)^/internal/.*`,
 	}
-	cfg.Response = &routewarden.ResponseConfig{
+	cfg.Response = &traefik_warden.ResponseConfig{
 		Mode:       "json",
 		StatusCode: http.StatusNotFound,
 		Body:       `{"error":"Not Found"}`,
@@ -725,7 +725,7 @@ func TestRouteWarden_WildcardAndPrefixPatterns(t *testing.T) {
 		_, _ = w.Write([]byte(`{"success":true}`))
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "wildcard-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "wildcard-test")
 	if err != nil {
 		t.Fatalf("failed to create handler: %v", err)
 	}
@@ -792,8 +792,8 @@ func TestRouteWarden_Methods(t *testing.T) {
 	})
 
 	t.Run("Default inspects only GET", func(t *testing.T) {
-		cfg := routewarden.CreateConfig()
-		handler, err := routewarden.New(context.Background(), next, cfg, "methods-default")
+		cfg := traefik_warden.CreateConfig()
+		handler, err := traefik_warden.New(context.Background(), next, cfg, "methods-default")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -826,9 +826,9 @@ func TestRouteWarden_Methods(t *testing.T) {
 	})
 
 	t.Run("Custom methods GET and POST", func(t *testing.T) {
-		cfg := routewarden.CreateConfig()
+		cfg := traefik_warden.CreateConfig()
 		cfg.Methods = []string{"GET", "POST"}
-		handler, err := routewarden.New(context.Background(), next, cfg, "methods-get-post")
+		handler, err := traefik_warden.New(context.Background(), next, cfg, "methods-get-post")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -853,9 +853,9 @@ func TestRouteWarden_Methods(t *testing.T) {
 	})
 
 	t.Run("Case-insensitive and empty fallback", func(t *testing.T) {
-		cfg := routewarden.CreateConfig()
+		cfg := traefik_warden.CreateConfig()
 		cfg.Methods = []string{"post", "delete"}
-		handler, err := routewarden.New(context.Background(), next, cfg, "methods-case")
+		handler, err := traefik_warden.New(context.Background(), next, cfg, "methods-case")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -877,9 +877,9 @@ func TestRouteWarden_Methods(t *testing.T) {
 		}
 
 		// Empty slice defaults to GET
-		cfgEmpty := routewarden.CreateConfig()
+		cfgEmpty := traefik_warden.CreateConfig()
 		cfgEmpty.Methods = []string{}
-		handlerEmpty, err := routewarden.New(context.Background(), next, cfgEmpty, "methods-empty")
+		handlerEmpty, err := traefik_warden.New(context.Background(), next, cfgEmpty, "methods-empty")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -898,10 +898,10 @@ func TestRouteWarden_CheckQuery_EdgeCases(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.CheckQuery = true
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "query-edge")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "query-edge")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -950,11 +950,11 @@ func TestRouteWarden_Methods_WithCheckQuery(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.CheckQuery = true
 	cfg.Methods = []string{"GET", "POST"}
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "methods-query")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "methods-query")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -983,10 +983,10 @@ func TestRouteWarden_Methods_WhitespacePadded(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.Methods = []string{"  get  ", "  post  "}
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "methods-whitespace")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "methods-whitespace")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1021,10 +1021,10 @@ func TestRouteWarden_Methods_WhitespaceOnly_FallsBackToGET(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.Methods = []string{"", "   ", "  "}
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "methods-ws-only")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "methods-ws-only")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1050,12 +1050,12 @@ func TestRouteWarden_EmptyPatternStrings(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.EnableDefaultPatterns = false
 	cfg.PathPatterns = []string{"", "   ", `(?i)^/secret$`, ""}
 	cfg.AllowPatterns = []string{"", "  ", `(?i)^/secret/allowed$`, ""}
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "empty-pattern-test")
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "empty-pattern-test")
 	if err != nil {
 		t.Fatalf("unexpected error creating handler with empty pattern strings: %v", err)
 	}
@@ -1082,5 +1082,72 @@ func TestRouteWarden_EmptyPatternStrings(t *testing.T) {
 	handler.ServeHTTP(rr2, req2)
 	if rr2.Code != http.StatusOK {
 		t.Errorf("expected /normal to pass, got %d", rr2.Code)
+	}
+}
+
+func TestRouteWarden_DebugLogging(t *testing.T) {
+	cfg := traefik_warden.CreateConfig()
+	cfg.Debug = true
+	cfg.CheckQuery = true
+	cfg.AllowedIPs = []string{"192.168.1.100"}
+	cfg.Methods = []string{"GET"}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "debug-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// 1. Blocked path
+	reqBlock := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrBlock := httptest.NewRecorder()
+	handler.ServeHTTP(rrBlock, reqBlock)
+	if rrBlock.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rrBlock.Code)
+	}
+
+	// 2. Allowed path
+	reqAllow := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	rrAllow := httptest.NewRecorder()
+	handler.ServeHTTP(rrAllow, reqAllow)
+	if rrAllow.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rrAllow.Code)
+	}
+
+	// 3. Whitelisted IP
+	reqIP := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	reqIP.RemoteAddr = "192.168.1.100:5432"
+	rrIP := httptest.NewRecorder()
+	handler.ServeHTTP(rrIP, reqIP)
+	if rrIP.Code != http.StatusOK {
+		t.Errorf("expected 200 for whitelisted IP, got %d", rrIP.Code)
+	}
+
+	// 4. Non-inspected method
+	reqPOST := httptest.NewRequest(http.MethodPost, "/.env", nil)
+	rrPOST := httptest.NewRecorder()
+	handler.ServeHTTP(rrPOST, reqPOST)
+	if rrPOST.Code != http.StatusOK {
+		t.Errorf("expected 200 for bypassed method, got %d", rrPOST.Code)
+	}
+
+	// 5. Blocked query
+	reqQuery := httptest.NewRequest(http.MethodGet, "/test?file=.env", nil)
+	rrQuery := httptest.NewRecorder()
+	handler.ServeHTTP(rrQuery, reqQuery)
+	if rrQuery.Code != http.StatusForbidden {
+		t.Errorf("expected 403 for blocked query, got %d", rrQuery.Code)
+	}
+
+	// 6. Normal benign request
+	reqNormal := httptest.NewRequest(http.MethodGet, "/about", nil)
+	rrNormal := httptest.NewRecorder()
+	handler.ServeHTTP(rrNormal, reqNormal)
+	if rrNormal.Code != http.StatusOK {
+		t.Errorf("expected 200 for normal request, got %d", rrNormal.Code)
 	}
 }

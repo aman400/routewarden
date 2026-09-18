@@ -1,4 +1,4 @@
-package routewarden_test
+package traefik_warden_test
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestIPFilter_Unit(t *testing.T) {
-	filter, err := routewarden.NewIPFilter([]string{
+	filter, err := traefik_warden.NewIPFilter([]string{
 		"192.168.1.10",
 		"10.0.0.0/16",
 		"2001:db8::/32",
@@ -71,7 +71,7 @@ func TestIPFilter_Unit(t *testing.T) {
 }
 
 func TestIPFilter_EmptyFilter(t *testing.T) {
-	filter, err := routewarden.NewIPFilter([]string{})
+	filter, err := traefik_warden.NewIPFilter([]string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,12 +84,12 @@ func TestIPFilter_EmptyFilter(t *testing.T) {
 }
 
 func TestIPFilter_InvalidInputs(t *testing.T) {
-	_, err := routewarden.NewIPFilter([]string{"999.999.999.999"})
+	_, err := traefik_warden.NewIPFilter([]string{"999.999.999.999"})
 	if err == nil {
 		t.Errorf("expected error for invalid IP address")
 	}
 
-	_, err2 := routewarden.NewIPFilter([]string{"10.0.0.0/999"})
+	_, err2 := traefik_warden.NewIPFilter([]string{"10.0.0.0/999"})
 	if err2 == nil {
 		t.Errorf("expected error for invalid CIDR subnet")
 	}
@@ -97,7 +97,7 @@ func TestIPFilter_InvalidInputs(t *testing.T) {
 
 func TestIPFilter_WhitespaceAndEmptyEntries(t *testing.T) {
 	// Empty and whitespace-only entries should be silently skipped
-	filter, err := routewarden.NewIPFilter([]string{"", "  ", "192.168.1.1", " "})
+	filter, err := traefik_warden.NewIPFilter([]string{"", "  ", "192.168.1.1", " "})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestIPFilter_WhitespaceAndEmptyEntries(t *testing.T) {
 }
 
 func TestIPFilter_UnparseableRemoteAddr(t *testing.T) {
-	filter, err := routewarden.NewIPFilter([]string{"10.0.0.0/8"})
+	filter, err := traefik_warden.NewIPFilter([]string{"10.0.0.0/8"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestIPFilter_UnparseableRemoteAddr(t *testing.T) {
 }
 
 func TestIPFilter_XForwardedFor_MultipleIPs(t *testing.T) {
-	filter, err := routewarden.NewIPFilter([]string{"10.0.0.1"})
+	filter, err := traefik_warden.NewIPFilter([]string{"10.0.0.1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
