@@ -34,6 +34,9 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if len(cfg.AllowedIPs) != 0 {
 		t.Errorf("expected default AllowedIPs to be empty")
 	}
+	if len(cfg.Methods) != 1 || cfg.Methods[0] != "GET" {
+		t.Errorf("expected default Methods to be ['GET'], got %v", cfg.Methods)
+	}
 	if cfg.Response != nil {
 		t.Errorf("expected default Response to be nil so top-level configs are used cleanly")
 	}
