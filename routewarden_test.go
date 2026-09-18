@@ -298,33 +298,88 @@ func TestRouteWarden_RedirectResponse(t *testing.T) {
 }
 
 func TestRouteWarden_AllowPatternsOverride(t *testing.T) {
-	cfg := routewarden.CreateConfig()
-	cfg.AllowPatterns = append(cfg.AllowPatterns, `(?i)^/public/.*\.txt$`)
-
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler, err := routewarden.New(context.Background(), next, cfg, "allow-test")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	t.Run("Allowlist supersedes both default and custom block patterns", func(t *testing.T) {
+		cfg := routewarden.CreateConfig()
+		cfg.EnableDefaultPatterns = true
+		cfg.EnableDefaultAllowPatterns = true
+		cfg.PathPatterns = []string{`(?i)^/api/.*$`}
+		cfg.AllowPatterns = []string{
+			`(?i)^/api/public/.*\.env$`,
+			`(?i)^/public/.*\.txt$`,
+		}
 
-	// /public/info.txt would normally match .txt block rule, but is explicitly allowed
-	req1 := httptest.NewRequest(http.MethodGet, "/public/info.txt", nil)
-	rr1 := httptest.NewRecorder()
-	handler.ServeHTTP(rr1, req1)
-	if rr1.Code != http.StatusOK {
-		t.Errorf("expected 200 for allowed pattern, got %d", rr1.Code)
-	}
+		handler, err := routewarden.New(context.Background(), next, cfg, "allow-override-test")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-	// /private/info.txt should be blocked
-	req2 := httptest.NewRequest(http.MethodGet, "/private/info.txt", nil)
-	rr2 := httptest.NewRecorder()
-	handler.ServeHTTP(rr2, req2)
-	if rr2.Code != http.StatusForbidden {
-		t.Errorf("expected 403 for blocked pattern, got %d", rr2.Code)
-	}
+		// 1. Default allow pattern: /robots.txt
+		// (/robots.txt matches default block pattern for .txt, but is exempted by default allow pattern)
+		reqRobots := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+		rrRobots := httptest.NewRecorder()
+		handler.ServeHTTP(rrRobots, reqRobots)
+		if rrRobots.Code != http.StatusOK {
+			t.Errorf("expected /robots.txt to pass through via default allowlist override, got %d", rrRobots.Code)
+		}
+
+		// 2. Default allow pattern: /.well-known/acme-challenge/test
+		// (/.well-known matches hidden directory block pattern, but acme-challenge is allowed)
+		reqAcme := httptest.NewRequest(http.MethodGet, "/.well-known/acme-challenge/test", nil)
+		rrAcme := httptest.NewRecorder()
+		handler.ServeHTTP(rrAcme, reqAcme)
+		if rrAcme.Code != http.StatusOK {
+			t.Errorf("expected /.well-known/acme-challenge to pass through via default allowlist override, got %d", rrAcme.Code)
+		}
+
+		// 3. Custom allow overriding default block (.env)
+		// /api/public/demo.env matches default .env block pattern, but matches custom allow pattern
+		reqEnv := httptest.NewRequest(http.MethodGet, "/api/public/demo.env", nil)
+		rrEnv := httptest.NewRecorder()
+		handler.ServeHTTP(rrEnv, reqEnv)
+		if rrEnv.Code != http.StatusOK {
+			t.Errorf("expected /api/public/demo.env to supersede blocklist and pass through, got %d", rrEnv.Code)
+		}
+
+		// 4. Custom allow overriding custom block pattern (/api/.*)
+		// /public/info.txt matches block pattern for .txt, but matches custom allow pattern
+		reqTxt := httptest.NewRequest(http.MethodGet, "/public/info.txt", nil)
+		rrTxt := httptest.NewRecorder()
+		handler.ServeHTTP(rrTxt, reqTxt)
+		if rrTxt.Code != http.StatusOK {
+			t.Errorf("expected /public/info.txt to supersede blocklist and pass through, got %d", rrTxt.Code)
+		}
+
+		// 5. Normal blocked request (not in allowlist) should be rejected
+		reqBlocked := httptest.NewRequest(http.MethodGet, "/api/private/secret.env", nil)
+		rrBlocked := httptest.NewRecorder()
+		handler.ServeHTTP(rrBlocked, reqBlocked)
+		if rrBlocked.Code != http.StatusForbidden {
+			t.Errorf("expected /api/private/secret.env to be blocked with 403, got %d", rrBlocked.Code)
+		}
+	})
+
+	t.Run("Disabling default allow patterns removes exemption", func(t *testing.T) {
+		cfg := routewarden.CreateConfig()
+		cfg.EnableDefaultPatterns = true
+		cfg.EnableDefaultAllowPatterns = false
+
+		handler, err := routewarden.New(context.Background(), next, cfg, "disable-default-allow")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// When default allow patterns are disabled, /robots.txt matches the default .txt block rule
+		reqRobots := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+		rrRobots := httptest.NewRecorder()
+		handler.ServeHTTP(rrRobots, reqRobots)
+		if rrRobots.Code != http.StatusForbidden {
+			t.Errorf("expected /robots.txt to be blocked when EnableDefaultAllowPatterns is false, got %d", rrRobots.Code)
+		}
+	})
 }
 
 func TestRouteWarden_DisableDefaultAllowPatterns(t *testing.T) {
@@ -838,4 +893,194 @@ func TestRouteWarden_Methods(t *testing.T) {
 	})
 }
 
+func TestRouteWarden_CheckQuery_EdgeCases(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
+	cfg := routewarden.CreateConfig()
+	cfg.CheckQuery = true
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "query-edge")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	t.Run("Multi-value query parameter with sensitive value", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/search?file=report&file=backup.sql", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("expected 403 for query containing backup.sql, got %d", rr.Code)
+		}
+	})
+
+	t.Run("Malformed percent-encoding in query", func(t *testing.T) {
+		// %ZZ is not valid percent-encoding; QueryUnescape will error,
+		// code falls back to raw query which still contains .env
+		req := httptest.NewRequest(http.MethodGet, "/search?file=%ZZ/.env", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("expected 403 for malformed encoding containing .env, got %d", rr.Code)
+		}
+	})
+
+	t.Run("Benign query string does not trigger block", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/search?page=1&limit=20&sort=name", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 for benign query, got %d", rr.Code)
+		}
+	})
+
+	t.Run("Empty query string with checkQuery enabled", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 for no query string, got %d", rr.Code)
+		}
+	})
+}
+
+func TestRouteWarden_Methods_WithCheckQuery(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cfg := routewarden.CreateConfig()
+	cfg.CheckQuery = true
+	cfg.Methods = []string{"GET", "POST"}
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "methods-query")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	t.Run("POST with sensitive query is blocked when POST in methods", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/submit?file=.env", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("expected 403 for POST with sensitive query, got %d", rr.Code)
+		}
+	})
+
+	t.Run("DELETE with sensitive query bypasses when DELETE not in methods", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodDelete, "/submit?file=.env", nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("expected 200 for DELETE bypassing inspection, got %d", rr.Code)
+		}
+	})
+}
+
+func TestRouteWarden_Methods_WhitespacePadded(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cfg := routewarden.CreateConfig()
+	cfg.Methods = []string{"  get  ", "  post  "}
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "methods-whitespace")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// GET should be inspected and blocked
+	reqGet := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrGet := httptest.NewRecorder()
+	handler.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusForbidden {
+		t.Errorf("expected trimmed ' get ' to match GET and block /.env, got %d", rrGet.Code)
+	}
+
+	// POST should be inspected and blocked
+	reqPost := httptest.NewRequest(http.MethodPost, "/.env", nil)
+	rrPost := httptest.NewRecorder()
+	handler.ServeHTTP(rrPost, reqPost)
+	if rrPost.Code != http.StatusForbidden {
+		t.Errorf("expected trimmed ' post ' to match POST and block /.env, got %d", rrPost.Code)
+	}
+
+	// PUT should bypass
+	reqPut := httptest.NewRequest(http.MethodPut, "/.env", nil)
+	rrPut := httptest.NewRecorder()
+	handler.ServeHTTP(rrPut, reqPut)
+	if rrPut.Code != http.StatusOK {
+		t.Errorf("expected PUT to bypass, got %d", rrPut.Code)
+	}
+}
+
+func TestRouteWarden_Methods_WhitespaceOnly_FallsBackToGET(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cfg := routewarden.CreateConfig()
+	cfg.Methods = []string{"", "   ", "  "}
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "methods-ws-only")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should fall back to GET as all entries are whitespace-only
+	reqGet := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrGet := httptest.NewRecorder()
+	handler.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusForbidden {
+		t.Errorf("expected whitespace-only methods to default to GET and block /.env, got %d", rrGet.Code)
+	}
+
+	reqPost := httptest.NewRequest(http.MethodPost, "/.env", nil)
+	rrPost := httptest.NewRecorder()
+	handler.ServeHTTP(rrPost, reqPost)
+	if rrPost.Code != http.StatusOK {
+		t.Errorf("expected POST to bypass when defaulted to GET-only, got %d", rrPost.Code)
+	}
+}
+
+func TestRouteWarden_EmptyPatternStrings(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cfg := routewarden.CreateConfig()
+	cfg.EnableDefaultPatterns = false
+	cfg.PathPatterns = []string{"", "   ", `(?i)^/secret$`, ""}
+	cfg.AllowPatterns = []string{"", "  ", `(?i)^/secret/allowed$`, ""}
+
+	handler, err := routewarden.New(context.Background(), next, cfg, "empty-pattern-test")
+	if err != nil {
+		t.Fatalf("unexpected error creating handler with empty pattern strings: %v", err)
+	}
+
+	// /secret should be blocked
+	req1 := httptest.NewRequest(http.MethodGet, "/secret", nil)
+	rr1 := httptest.NewRecorder()
+	handler.ServeHTTP(rr1, req1)
+	if rr1.Code != http.StatusForbidden {
+		t.Errorf("expected /secret to be blocked, got %d", rr1.Code)
+	}
+
+	// /secret/allowed should pass
+	reqAllowed := httptest.NewRequest(http.MethodGet, "/secret/allowed", nil)
+	rrAllowed := httptest.NewRecorder()
+	handler.ServeHTTP(rrAllowed, reqAllowed)
+	if rrAllowed.Code != http.StatusOK {
+		t.Errorf("expected /secret/allowed to pass, got %d", rrAllowed.Code)
+	}
+
+	// /normal should pass
+	req2 := httptest.NewRequest(http.MethodGet, "/normal", nil)
+	rr2 := httptest.NewRecorder()
+	handler.ServeHTTP(rr2, req2)
+	if rr2.Code != http.StatusOK {
+		t.Errorf("expected /normal to pass, got %d", rr2.Code)
+	}
+}
