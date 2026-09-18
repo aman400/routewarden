@@ -9,7 +9,7 @@
   <a href="https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml"><img src="https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status" /></a>
   <a href="https://traefik.io"><img src="https://img.shields.io/badge/Traefik-v2.x%20%7C%20v3.x-24A1C1.svg?logo=traefik&logoColor=white" alt="Traefik Compatibility: v2.x | v3.x" /></a>
   <a href="https://pkg.go.dev/github.com/routewarden/traefik-warden"><img src="https://pkg.go.dev/badge/github.com/routewarden/traefik-warden.svg" alt="Go Reference" /></a>
-  <a href="https://routewarden.github.io/docs/guide/testing"><img src="https://img.shields.io/badge/Coverage-94.5%25-brightgreen.svg" alt="Test Coverage: 94.5%" /></a>
+  <a href="https://routewarden.github.io/docs/guide/testing"><img src="https://img.shields.io/badge/Coverage-98.4%25-brightgreen.svg" alt="Test Coverage: 98.4%" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
   <a href="https://goreportcard.com/report/github.com/routewarden/traefik-warden"><img src="https://goreportcard.com/badge/github.com/routewarden/traefik-warden" alt="Go Report Card" /></a>
   <a href="https://routewarden.github.io/docs/"><img src="https://img.shields.io/badge/Docs-VitePress%20Wiki-6366f1.svg" alt="Documentation Site" /></a>
@@ -59,7 +59,7 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
-      - "--experimental.plugins.routewarden.version=v0.2.4"
+      - "--experimental.plugins.routewarden.version=v0.3.0"
     ports:
       - "80:80"
     volumes:
@@ -98,7 +98,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/routewarden/traefik-warden
-      version: v0.2.4
+      version: v0.3.0
 ```
 
 #### 2. Dynamic Configuration (`dynamic_conf.yml`)
@@ -150,6 +150,7 @@ http:
 | `pathPatterns` | `[]string` | `[]` | Additional custom regex patterns to block (e.g. `['(?i)^/admin/.*']`). |
 | `allowPatterns` | `[]string` | `[]` | Custom safe regex overrides to always allow. |
 | `allowedIps` | `[]string` | `[]` | Whitelisted IPv4/IPv6 addresses or CIDR subnets (e.g. `127.0.0.1`, `10.0.0.0/8`). |
+| `methods` | `[]string` | `["GET"]` | HTTP request verbs to inspect (e.g. `["GET", "POST"]`). Non-matching verbs bypass inspection. |
 | `checkQuery` | `bool` | `false` | Also inspect query parameters for blocked patterns. |
 | `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"xml"`, `"captcha"`, `"redirect"`, `"proxy"`, `"silentDrop"`, `"gzipBomb"`, `"tarpit"`, `"fakeSuccess"`, `"rateLimitChallenge"`, or `"infiniteStream"`. |
 | `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
@@ -181,12 +182,12 @@ For in-depth setup guides, anti-evasion architecture, and ready-to-run blueprint
 
 ## Testing & Quality Assurance
 
-RouteWarden maintains a comprehensive automated testing pipeline with **94.5% statement test coverage** and automated data race detection:
+RouteWarden maintains a comprehensive automated testing pipeline with **98.4% statement test coverage** and automated data race detection:
 
 | Test Suite | Scope | Command | CI Status |
 |---|---|---|---|
 | **Go Unit & Race Tests** | Core engine, IP CIDR filter, path normalization, response modes, and security evasion vectors | `go test -v -race ./...` | [![CI](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml) |
-| **Statement Coverage** | Full test coverage report across all packages (94.5%) | `go test -coverprofile=coverage.out ./...` | ✅ 94.5% Coverage |
+| **Statement Coverage** | Full test coverage report across all packages (98.4%) | `go test -coverprofile=coverage.out ./...` | ✅ 98.4% Coverage |
 
 ```bash
 # Run all Go tests with race detector

@@ -14,6 +14,7 @@ type RouteWarden struct {
 	next            http.Handler
 	name            string
 	enabled         bool
+	methods         map[string]struct{}
 	blockRegexes    []*regexp.Regexp
 	allowRegexes    []*regexp.Regexp
 	ipFilter        *IPFilter
@@ -25,6 +26,21 @@ type RouteWarden struct {
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	if config == nil {
 		config = CreateConfig()
+	}
+
+	methodsMap := make(map[string]struct{})
+	if len(config.Methods) == 0 {
+		methodsMap["GET"] = struct{}{}
+	} else {
+		for _, m := range config.Methods {
+			m = strings.ToUpper(strings.TrimSpace(m))
+			if m != "" {
+				methodsMap[m] = struct{}{}
+			}
+		}
+		if len(methodsMap) == 0 {
+			methodsMap["GET"] = struct{}{}
+		}
 	}
 
 	var blockPatterns []string
@@ -78,6 +94,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		next:            next,
 		name:            name,
 		enabled:         config.Enabled,
+		methods:         methodsMap,
 		blockRegexes:    compiledBlockRegexes,
 		allowRegexes:    compiledAllowRegexes,
 		ipFilter:        ipFilter,
@@ -88,6 +105,12 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 
 func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if !rw.enabled {
+		rw.next.ServeHTTP(w, req)
+		return
+	}
+
+	// Only inspect requests whose HTTP method matches configured verbs (default: GET)
+	if _, matchesMethod := rw.methods[strings.ToUpper(req.Method)]; !matchesMethod {
 		rw.next.ServeHTTP(w, req)
 		return
 	}
