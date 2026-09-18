@@ -82,7 +82,7 @@ services:
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.enableDefaultPatterns=true"
       # (Default: []) (Optional) Custom regex patterns to block
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/api/internal(/.*)?$"
-      # (Optional) Exceptions that should always be allowed (Default: robots.txt, ads.txt, sitemap.xml, .well-known/*)
+      # (Optional) Exceptions that should always be allowed (Default: [])
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.allowPatterns=(?i)^/api/internal/health$,(?i)^/robots\\.txt$"
       # Return 404 instead of 403 (Default mode: text, Default statusCode: 403)
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.mode=text"
