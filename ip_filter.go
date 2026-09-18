@@ -1,4 +1,4 @@
-package routewarden
+package traefik_warden
 
 import (
 	"fmt"

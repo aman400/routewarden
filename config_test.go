@@ -1,4 +1,4 @@
-package routewarden_test
+package traefik_warden_test
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateConfig_Defaults(t *testing.T) {
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 
 	if !cfg.Enabled {
 		t.Errorf("expected Enabled to default to true")
@@ -28,6 +28,9 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if cfg.CheckQuery {
 		t.Errorf("expected CheckQuery to default to false")
 	}
+	if cfg.Debug {
+		t.Errorf("expected Debug to default to false")
+	}
 	if len(cfg.AllowPatterns) != 0 {
 		t.Errorf("expected custom AllowPatterns to default to empty slice")
 	}
@@ -43,13 +46,13 @@ func TestCreateConfig_Defaults(t *testing.T) {
 }
 
 func TestDefaultBlockPatterns_ValidRegex(t *testing.T) {
-	if len(routewarden.DefaultBlockPatterns) == 0 {
+	if len(traefik_warden.DefaultBlockPatterns) == 0 {
 		t.Fatalf("DefaultBlockPatterns should not be empty")
 	}
 }
 
 func TestDefaultAllowPatterns_ValidRegex(t *testing.T) {
-	if len(routewarden.DefaultAllowPatterns) == 0 {
+	if len(traefik_warden.DefaultAllowPatterns) == 0 {
 		t.Fatalf("DefaultAllowPatterns should not be empty")
 	}
 }

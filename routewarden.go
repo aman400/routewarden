@@ -1,8 +1,9 @@
-package routewarden
+package traefik_warden
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -14,6 +15,7 @@ type RouteWarden struct {
 	next            http.Handler
 	name            string
 	enabled         bool
+	debug           bool
 	methods         map[string]struct{}
 	blockRegexes    []*regexp.Regexp
 	allowRegexes    []*regexp.Regexp
@@ -94,6 +96,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		next:            next,
 		name:            name,
 		enabled:         config.Enabled,
+		debug:           config.Debug,
 		methods:         methodsMap,
 		blockRegexes:    compiledBlockRegexes,
 		allowRegexes:    compiledAllowRegexes,
@@ -101,6 +104,12 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		checkQuery:      config.CheckQuery,
 		responseHandler: respHandler,
 	}, nil
+}
+
+func (rw *RouteWarden) logDebug(format string, v ...interface{}) {
+	if rw.debug {
+		log.Printf("[DEBUG] routewarden [%s]: "+format, append([]interface{}{rw.name}, v...)...)
+	}
 }
 
 func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -111,22 +120,26 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// Only inspect requests whose HTTP method matches configured verbs (default: GET)
 	if _, matchesMethod := rw.methods[strings.ToUpper(req.Method)]; !matchesMethod {
+		rw.logDebug("method %s not in inspected methods, bypassing", req.Method)
 		rw.next.ServeHTTP(w, req)
 		return
 	}
 
 	// Exempt whitelisted client IPs or CIDR subnets from blocking
 	if rw.ipFilter.IsAllowed(req) {
+		rw.logDebug("client IP %s is whitelisted, allowing request", req.RemoteAddr)
 		rw.next.ServeHTTP(w, req)
 		return
 	}
 
 	// Canonicalize and inspect paths with anti-evasion protections
 	candidatePaths := ExtractCandidatePaths(req.URL.RawPath, req.URL.Path, req.RequestURI)
+	rw.logDebug("inspecting request %s %s with %d candidate paths: %v", req.Method, req.URL.Path, len(candidatePaths), candidatePaths)
 
 	// 1. Check AllowPatterns first (Allowlist override)
 	for _, p := range candidatePaths {
-		if rw.isAllowed(p) {
+		if re := rw.findMatchingAllow(p); re != nil {
+			rw.logDebug("path %q allowed by pattern %q", p, re.String())
 			rw.next.ServeHTTP(w, req)
 			return
 		}
@@ -134,7 +147,8 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// 2. Check BlockPatterns against URL paths
 	for _, p := range candidatePaths {
-		if rw.isBlocked(p) {
+		if re := rw.findMatchingBlock(p); re != nil {
+			rw.logDebug("path %q blocked by pattern %q (mode: %s)", p, re.String(), rw.responseHandler.config.Mode)
 			rw.responseHandler.ServeBlockedRequest(w, req)
 			return
 		}
@@ -147,15 +161,22 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			unescapedQuery = req.URL.RawQuery
 		}
 
-		if rw.isBlocked(unescapedQuery) || rw.isBlocked(req.URL.RawQuery) {
+		if re := rw.findMatchingBlock(unescapedQuery); re != nil {
+			rw.logDebug("unescaped query %q blocked by pattern %q", unescapedQuery, re.String())
+			rw.responseHandler.ServeBlockedRequest(w, req)
+			return
+		}
+		if re := rw.findMatchingBlock(req.URL.RawQuery); re != nil {
+			rw.logDebug("raw query %q blocked by pattern %q", req.URL.RawQuery, re.String())
 			rw.responseHandler.ServeBlockedRequest(w, req)
 			return
 		}
 
 		queryParams := req.URL.Query()
-		for _, values := range queryParams {
+		for key, values := range queryParams {
 			for _, val := range values {
-				if rw.isBlocked(val) {
+				if re := rw.findMatchingBlock(val); re != nil {
+					rw.logDebug("query param %q with value %q blocked by pattern %q", key, val, re.String())
 					rw.responseHandler.ServeBlockedRequest(w, req)
 					return
 				}
@@ -163,23 +184,24 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	rw.logDebug("request %s %s passed inspection", req.Method, req.URL.Path)
 	rw.next.ServeHTTP(w, req)
 }
 
-func (rw *RouteWarden) isAllowed(target string) bool {
+func (rw *RouteWarden) findMatchingAllow(target string) *regexp.Regexp {
 	for _, re := range rw.allowRegexes {
 		if re.MatchString(target) {
-			return true
+			return re
 		}
 	}
-	return false
+	return nil
 }
 
-func (rw *RouteWarden) isBlocked(target string) bool {
+func (rw *RouteWarden) findMatchingBlock(target string) *regexp.Regexp {
 	for _, re := range rw.blockRegexes {
 		if re.MatchString(target) {
-			return true
+			return re
 		}
 	}
-	return false
+	return nil
 }
