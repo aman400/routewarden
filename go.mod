@@ -1,3 +1,3 @@
 module github.com/routewarden/traefik-warden
 
-go 1.21
+go 1.26.0
