@@ -1,9 +1,11 @@
 package routewarden_test
 
 import (
+	"bufio"
 	"compress/gzip"
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -660,3 +662,202 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 }
 
+func TestResponseHandler_NilConfig_Defaults(t *testing.T) {
+	// nil respCfg + zero topStatusCode should default to 403 and mode "text"
+	handler, err := routewarden.NewResponseHandler(nil, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected nil config to default to 403, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Header().Get("Content-Type"), "text/plain") {
+		t.Errorf("expected nil config to default to text/plain content-type, got %q", rr.Header().Get("Content-Type"))
+	}
+}
+
+func TestResponseHandler_NilConfig_WithTopStatusCode(t *testing.T) {
+	// nil respCfg + topStatusCode=404 should use 404
+	handler, err := routewarden.NewResponseHandler(nil, http.StatusNotFound, "Custom Not Found", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404 from topStatusCode, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Custom Not Found") {
+		t.Errorf("expected custom response text body, got %q", rr.Body.String())
+	}
+}
+
+func TestResponseHandler_TopStatusCodeFallback_WithRespConfig(t *testing.T) {
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		StatusCode: 0,
+		Mode:       "text",
+	}, http.StatusTeapot, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusTeapot {
+		t.Errorf("expected inherited status code 418, got %d", rr.Code)
+	}
+}
+
+func TestResponseHandler_ZeroStatusCode_EmptyMode(t *testing.T) {
+	// respCfg with StatusCode=0 and Mode="" should default to 403 and "text"
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		StatusCode: 0,
+		Mode:       "",
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected default 403, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Header().Get("Content-Type"), "text/plain") {
+		t.Errorf("expected default text/plain, got %q", rr.Header().Get("Content-Type"))
+	}
+}
+
+// mockHijackConn is a minimal net.Conn for testing silent drop hijack.
+type mockHijackConn struct {
+	closed bool
+}
+
+func (c *mockHijackConn) Read(_ []byte) (int, error)         { return 0, io.EOF }
+func (c *mockHijackConn) Write(_ []byte) (int, error)        { return 0, io.EOF }
+func (c *mockHijackConn) Close() error                       { c.closed = true; return nil }
+func (c *mockHijackConn) LocalAddr() net.Addr                { return nil }
+func (c *mockHijackConn) RemoteAddr() net.Addr               { return nil }
+func (c *mockHijackConn) SetDeadline(_ time.Time) error      { return nil }
+func (c *mockHijackConn) SetReadDeadline(_ time.Time) error  { return nil }
+func (c *mockHijackConn) SetWriteDeadline(_ time.Time) error { return nil }
+
+// hijackableRecorder wraps httptest.ResponseRecorder and implements http.Hijacker.
+type hijackableRecorder struct {
+	*httptest.ResponseRecorder
+	conn     *mockHijackConn
+	hijacked bool
+}
+
+func (h *hijackableRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h.hijacked = true
+	h.conn = &mockHijackConn{}
+	return h.conn, bufio.NewReadWriter(bufio.NewReader(strings.NewReader("")), bufio.NewWriter(io.Discard)), nil
+}
+
+func TestResponseHandler_SilentDrop_WithHijacker(t *testing.T) {
+	handler, err := routewarden.NewResponseHandler(nil, 0, "", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rec := &hijackableRecorder{ResponseRecorder: httptest.NewRecorder()}
+	handler.ServeBlockedRequest(rec, req)
+
+	if !rec.hijacked {
+		t.Errorf("expected Hijack() to be called for silent drop")
+	}
+	// With successful hijack, no status code should be written (the connection was closed)
+	// The recorder's Code stays at the default 200 since WriteHeader was never called
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected no explicit status code write after successful hijack, got %d", rec.Code)
+	}
+}
+
+func TestResponseHandler_TarpitZeroDefaults(t *testing.T) {
+	// Tarpit with zero delay and zero max duration should use defaults
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:                     "tarpit",
+		StatusCode:               http.StatusForbidden,
+		TarpitDelayMs:            0,
+		TarpitMaxDurationSeconds: 0,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	// Use a context with a very short timeout so we don't hang
+	ctx, cancel := context.WithTimeout(req.Context(), 100*time.Millisecond)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rr.Code)
+	}
+}
+
+func TestResponseHandler_RateLimitZeroDefaults(t *testing.T) {
+	// RateLimit with zero RetryAfterSeconds should fall back to 300
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:              "ratelimit",
+		RetryAfterSeconds: 0,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Header().Get("Retry-After") != "300" {
+		t.Errorf("expected default Retry-After: 300, got %q", rr.Header().Get("Retry-After"))
+	}
+	if rr.Code != http.StatusTooManyRequests {
+		t.Errorf("expected 429, got %d", rr.Code)
+	}
+}
+
+func TestResponseHandler_InfiniteStreamZeroDefaults(t *testing.T) {
+	// InfiniteStream with zero StreamSizeMB should fall back to default 50MB
+	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+		Mode:         "infiniteStream",
+		StatusCode:   http.StatusOK,
+		StreamSizeMB: 0,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Header().Get("Content-Type"), "application/octet-stream") {
+		t.Errorf("expected application/octet-stream content-type, got %q", rr.Header().Get("Content-Type"))
+	}
+	// With 50MB default, body should be substantial
+	if rr.Body.Len() < 1024 {
+		t.Errorf("expected substantial body from infiniteStream, got %d bytes", rr.Body.Len())
+	}
+}
