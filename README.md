@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assets/icon.svg" alt="RouteWarden Logo" width="140" height="140" />
   <h1>RouteWarden</h1>
-  <p><strong>High-performance Traefik middleware to stop sensitive file exposure (.env, .git, backups), neutralize path-evasion attacks, whitelist IPs, and serve custom error/captcha responses before requests reach your backend.</strong></p>
+  <p><strong>Lightweight Traefik middleware to block sensitive file exposure (.env, .git, backups), neutralize path-evasion tricks, whitelist trusted IPs, and respond cleanly before requests hit your backend.</strong></p>
 </div>
 
 <p align="center">
@@ -11,14 +11,14 @@
   <a href="https://pkg.go.dev/github.com/routewarden/traefik-warden"><img src="https://pkg.go.dev/badge/github.com/routewarden/traefik-warden.svg" alt="Go Reference" /></a>
   <a href="https://routewarden.github.io/docs/guide/testing"><img src="https://img.shields.io/badge/Coverage-98.4%25-brightgreen.svg" alt="Test Coverage: 98.4%" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <a href="https://goreportcard.com/report/github.com/routewarden/traefik-warden"><img src="https://goreportcard.com/badge/github.com/routewarden/traefik-warden" alt="Go Report Card" /></a>
   <a href="https://routewarden.github.io/docs/"><img src="https://img.shields.io/badge/Docs-VitePress%20Wiki-6366f1.svg" alt="Documentation Site" /></a>
 </p>
 
 ---
 
-> 📖 **Full Documentation, Guides & Wiki**: [https://routewarden.github.io/docs/](https://routewarden.github.io/docs/)  
-> 📂 **Runnable Scenarios**: [`examples/`](examples/) *(Docker Compose & Kubernetes CRDs)*
+> **Live Playground**: Test rules, response modes, and bypass behaviors directly in your browser: [https://routewarden.github.io/docs/?playground=open](https://routewarden.github.io/docs/?playground=open)  
+> **Documentation & Guides**: [https://routewarden.github.io/docs/](https://routewarden.github.io/docs/)  
+> **Example Scenarios**: [`examples/`](examples/) (Docker Compose and Kubernetes CRDs)
 
 ---
 
@@ -26,27 +26,30 @@
 
 | Traefik Version | Status | Notes |
 |---|---|---|
-| **Traefik v3.x** (v3.0, v3.1, v3.2+) | ✅ **Fully Supported** | Standard Yaegi runtime, Docker labels & Kubernetes CRDs |
-| **Traefik v2.x** (v2.8 – v2.11+) | ✅ **Fully Supported** | Compatible with standard plugin mechanism |
-| **Traefik v1.x** | ❌ **Not Supported** | Plugins are not supported in Traefik v1 |
+| **Traefik v3.x** (v3.0, v3.1, v3.2+) | Supported | Runs via standard Yaegi runtime, Docker labels, and Kubernetes CRDs |
+| **Traefik v2.x** (v2.8 – v2.11+) | Supported | Compatible with Traefik v2 plugin mechanism |
+| **Traefik v1.x** | Not Supported | Traefik v1 does not support plugins |
 
 ---
 
 ## What is RouteWarden?
 
-**RouteWarden** is a lightweight Traefik middleware written in pure Go (with zero external dependencies) that intercepts malicious reconnaissance probing, sensitive file exposure, and automated bot scans before requests ever reach your backend:
+Web apps accidentally expose sensitive files and administration paths all the time. Automated bots and scanners crawl the internet looking for these files around the clock.
 
-- 🛡️ **Anti-Probing & Scanner Defense**: Instantly halts automated web vulnerability scanners and bots probing for exposed secrets, configuration files, and unprotected admin interfaces.
-- 📁 **Zero-Config File Guard**: Out-of-the-box blocking for `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, server logs, and debug endpoints.
-- ⚡ **Anti-Evasion Engine**: Normalizes multi-layer URL encoding (`%252e%252e`), semicolon matrix parameters (`/;param/.env`), Windows backslashes (`\`), and null bytes.
-- 🌐 **IP & CIDR Whitelist**: Bypass blocking for corporate VPNs, office IPs, or developer subnets (`10.0.0.0/8`, `100.64.0.0/10`).
-- 🎭 **Flexible Responses & Active Defense**: Neutralize probe attempts with standard **404 Not Found** (making endpoints appear non-existent), **403 Forbidden**, custom JSON, HTML, honeypot **Redirects**, interactive **Turnstile / hCaptcha** challenges, silent TCP drops, or an active **Gzip Bomb** (`gzipBomb`) that expands ~1000x in crawler RAM to halt automated reconnaissance scanners.
+**RouteWarden** sits directly inside Traefik to catch these requests before they ever reach your upstream application. Written in pure Go with zero external dependencies, it adds minimal overhead while giving you fine-grained control over how scanner probes are handled.
+
+### Key Capabilities
+
+- **Block Common Sensitive Files**: Protects `.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.conf`, `.yaml`, server logs, and debug endpoints out of the box.
+- **Normalize Sneaky Paths**: Stops common evasion techniques like double URL-encoding (`%252e%252e`), path traversal, matrix parameters (`/;param/.env`), Windows backslashes, and null bytes before evaluating rules.
+- **Whitelist Trusted IPs**: Let office networks, VPNs, or internal subnets bypass inspection using single IPs or CIDR blocks (`10.0.0.0/8`, `100.64.0.0/10`).
+- **Flexible Response Actions**: Choose how to answer blocked requests. Return a simple **404 Not Found** so attackers think the path doesn't exist, send **403 Forbidden**, render custom JSON or HTML, issue honeypot redirects, require **Cloudflare Turnstile or hCaptcha** challenges, silently drop TCP connections, or trigger an active **gzip bomb** against scanners.
 
 ---
 
-## Quick Start (404 Response Example)
+## Quick Start (Return 404 on Probes)
 
-The cleanest way to handle reconnaissance bots is returning a standard **404 Not Found** so attackers believe the file does not exist.
+Returning a standard `404 Not Found` is often the best choice: attackers cannot distinguish between a protected secret and a path that never existed.
 
 ### Option A: Docker Compose
 
@@ -73,16 +76,15 @@ services:
       - "traefik.http.routers.webapp.entrypoints=web"
       - "traefik.http.routers.webapp.middlewares=warden-shield"
 
-      # RouteWarden Configuration
-      # (Default: true) Enable or disable middleware
+      # (Default: true) Enable middleware
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.enabled=true"
-      # (Default: true) Block sensitive files (.env*, .git, .aws, .sql, .bak, .log, configs)
+      # (Default: true) Block common sensitive files (.env*, .git, .aws, .sql, .bak, .log, etc.)
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.enableDefaultPatterns=true"
-      # (Optional) Custom regex patterns to block (Default: [])
+      # (Default: []) (Optional) Custom regex patterns to block
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.pathPatterns=(?i)^/admin(/.*)?$,(?i)^/api/internal(/.*)?$"
-      # (Optional) Safe exception overrides to allow (Default: robots.txt, ads.txt, sitemap.xml, .well-known/*)
+      # (Optional) Exceptions that should always be allowed (Default: robots.txt, ads.txt, sitemap.xml, .well-known/*)
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.allowPatterns=(?i)^/api/internal/health$,(?i)^/robots\\.txt$"
-      # Return a clean 404 response (Default mode: text, Default statusCode: 403)
+      # Return 404 instead of 403 (Default mode: text, Default statusCode: 403)
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.mode=text"
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.statusCode=404"
       - "traefik.http.middlewares.warden-shield.plugin.routewarden.response.body=404 page not found"
@@ -90,7 +92,7 @@ services:
 
 ---
 
-### Option B: Traefik Dynamic Configuration (`dynamic_conf.yml`)
+### Option B: Traefik File Configuration (`dynamic_conf.yml`)
 
 #### 1. Static Configuration (`traefik.yml`)
 ```yaml
@@ -108,21 +110,21 @@ http:
     warden-404:
       plugin:
         routewarden:
-          enabled: true                # Default: true
-          enableDefaultPatterns: true  # Default: true (.env*, .git, .aws, .sql, .bak, etc.)
-          # (Optional) Custom regex patterns to block (Default: [])
+          enabled: true
+          enableDefaultPatterns: true
+          # Block internal or admin endpoints
           pathPatterns:
             - '(?i)^/admin(/.*)?$'
             - '(?i)^/api/internal(/.*)?$'
-          # (Optional) Safe exceptions to allow (Default: robots.txt, ads.txt, sitemap.xml, .well-known/*)
+          # Allow specific public paths or health checks
           allowPatterns:
             - '(?i)^/api/internal/health$'
             - '(?i)^/robots\.txt$'
-          # (Optional) Trusted developer/VPN IP bypass (Default: [])
+          # Whitelist internal office / VPN ranges
           allowedIps:
             - "127.0.0.1"
             - "10.0.0.0/8"
-          # Response action (Default mode: text, Default statusCode: 403)
+          # Return 404 for blocked requests
           response:
             mode: text
             statusCode: 404
@@ -140,60 +142,61 @@ http:
 
 ---
 
-## Basic Configuration Options
+## Configuration Reference
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `enabled` | `bool` | `true` | Turn the middleware on or off. |
-| `enableDefaultPatterns` | `bool` | `true` | Block common sensitive files (`.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.log`, configs). |
-| `enableDefaultAllowPatterns` | `bool` | `true` | Enable built-in allowlist exemptions (`/robots.txt`, `/sitemap.xml`, `/.well-known/*`). |
-| `pathPatterns` | `[]string` | `[]` | Additional custom regex patterns to block (e.g. `['(?i)^/admin/.*']`). |
-| `allowPatterns` | `[]string` | `[]` | Custom safe regex overrides to always allow. |
-| `allowedIps` | `[]string` | `[]` | Whitelisted IPv4/IPv6 addresses or CIDR subnets (e.g. `127.0.0.1`, `10.0.0.0/8`). |
-| `methods` | `[]string` | `["GET"]` | HTTP request verbs to inspect (e.g. `["GET", "POST"]`). Non-matching verbs bypass inspection. |
-| `checkQuery` | `bool` | `false` | Also inspect query parameters for blocked patterns. |
-| `response.mode` | `string` | `"text"` | Action on block: `"text"`, `"json"`, `"html"`, `"xml"`, `"captcha"`, `"redirect"`, `"proxy"`, `"silentDrop"`, `"gzipBomb"`, `"tarpit"`, `"fakeSuccess"`, `"rateLimitChallenge"`, or `"infiniteStream"`. |
-| `response.statusCode` | `int` | `403` | HTTP status code returned to client (e.g. `404`, `403`, `401`, `429`, or `200` for honeypots). |
+| `enabled` | `bool` | `true` | Enables or disables the middleware. |
+| `enableDefaultPatterns` | `bool` | `true` | Blocks common sensitive files (`.env*`, `.git`, `.aws`, `.sql`, `.bak`, `.log`, configs). |
+| `enableDefaultAllowPatterns` | `bool` | `true` | Keeps standard crawler and discovery files accessible (`/robots.txt`, `/sitemap.xml`, `/.well-known/*`). |
+| `pathPatterns` | `[]string` | `[]` | Additional custom regular expressions to block. |
+| `allowPatterns` | `[]string` | `[]` | Regular expressions for paths that should always bypass blocking. |
+| `allowedIps` | `[]string` | `[]` | Trusted IPv4/IPv6 addresses or CIDR blocks allowed to bypass path inspection. |
+| `methods` | `[]string` | `["GET"]` | HTTP request methods to inspect (for example: `["GET", "POST"]`). Other methods pass through. |
+| `checkQuery` | `bool` | `false` | When true, also inspects query parameters against blocked patterns. |
+| `response.mode` | `string` | `"text"` | Action to take when a request is blocked: `"text"`, `"json"`, `"html"`, `"xml"`, `"captcha"`, `"redirect"`, `"proxy"`, `"silentDrop"`, `"gzipBomb"`, `"tarpit"`, `"fakeSuccess"`, `"rateLimitChallenge"`, or `"infiniteStream"`. |
+| `response.statusCode` | `int` | `403` | HTTP status code returned to the client (such as `404`, `403`, `401`, or `429`). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
 
-> 💡 For the complete list of settings (including Captcha providers, custom HTML templates, and header injection), visit the **[Full Configuration Reference](https://routewarden.github.io/docs/reference/configuration)**.  
-> ⚠️ **Note on `gzipBomb`**: Only attach this mode to confirmed exploit endpoints (`/.env`, `wp-login.php`, honeypots). Never attach it globally to public routes where legitimate search engine bots (Googlebot, Bingbot) or normal visitors could be impacted. Always keep `enableDefaultAllowPatterns: true` so `/robots.txt` is allowed.
+> For the complete list of settings (including Captcha keys, custom HTML templates, and header injection), read the **[Full Configuration Reference](https://routewarden.github.io/docs/reference/configuration)**.  
+> **Note on `gzipBomb`**: Use this mode only on verified honeypot paths or endpoints targeted exclusively by bots (such as `/.env` or `/wp-login.php`). Never use it on shared generic routes where normal users or legitimate crawlers might get caught. Always keep `enableDefaultAllowPatterns: true` to avoid blocking `/robots.txt`.
 
 ---
 
-## Documentation & Advanced Examples
+## Documentation & Guides
 
-For in-depth setup guides, anti-evasion architecture, and ready-to-run blueprints, visit our **[Documentation Wiki](https://routewarden.github.io/docs/)**:
+For detailed setup instructions, architecture deep dives, and production examples, check the documentation:
 
-- 📖 **[Getting Started & Installation Guide](https://routewarden.github.io/docs/guide/getting-started)**
-- 🏛️ **[System Architecture & Pipeline](https://routewarden.github.io/docs/guide/architecture)**
-- 💻 **[Local Development & Testing Guide](https://routewarden.github.io/docs/guide/local-deployment)**
-- 🧪 **[Automated Testing & Coverage Architecture](https://routewarden.github.io/docs/guide/testing)**
-- ⚙️ **[Full Configuration Options Table](https://routewarden.github.io/docs/reference/configuration)**
-- 🎭 **[Response Modes & Active Defense Guide](https://routewarden.github.io/docs/reference/response-modes)**
-- 🎯 **[Custom Path Patterns & Regex Guide](https://routewarden.github.io/docs/reference/custom-paths)**
-- 🛡️ **[Anti-Evasion Engine (Encoding, Matrix Params, Traversals)](https://routewarden.github.io/docs/reference/anti-evasion)**
-- 🚀 **[Global EntryPoint Shield Cookbook](https://routewarden.github.io/docs/examples/docker-compose-global)**
-- 🌐 **[IP & CIDR Subnet Whitelisting Cookbook](https://routewarden.github.io/docs/examples/ip-whitelisting)**
-- 🤖 **[Cloudflare Turnstile & hCaptcha Challenges](https://routewarden.github.io/docs/examples/captcha)**
-- ☸️ **[Kubernetes IngressRoute CRD Example](https://routewarden.github.io/docs/examples/kubernetes)**
+- [Interactive Live Playground](https://routewarden.github.io/docs/?playground=open)
+- [Getting Started & Installation](https://routewarden.github.io/docs/guide/getting-started)
+- [Architecture & Request Pipeline](https://routewarden.github.io/docs/guide/architecture)
+- [Local Development & Testing](https://routewarden.github.io/docs/guide/local-deployment)
+- [Testing Architecture & Coverage](https://routewarden.github.io/docs/guide/testing)
+- [Configuration Reference](https://routewarden.github.io/docs/reference/configuration)
+- [Response Modes & Defense Actions](https://routewarden.github.io/docs/reference/response-modes)
+- [Custom Path Patterns & Regex](https://routewarden.github.io/docs/reference/custom-paths)
+- [Anti-Evasion Engine](https://routewarden.github.io/docs/reference/anti-evasion)
+- [Global EntryPoint Shield Recipe](https://routewarden.github.io/docs/examples/docker-compose-global)
+- [IP & CIDR Whitelisting](https://routewarden.github.io/docs/examples/ip-whitelisting)
+- [Cloudflare Turnstile & hCaptcha](https://routewarden.github.io/docs/examples/captcha)
+- [Kubernetes IngressRoute CRD](https://routewarden.github.io/docs/examples/kubernetes)
 
 ---
 
-## Testing & Quality Assurance
+## Testing & Quality
 
-RouteWarden maintains a comprehensive automated testing pipeline with **98.4% statement test coverage** and automated data race detection:
+RouteWarden is tested against automated data races and maintains **98.4% statement test coverage**:
 
 | Test Suite | Scope | Command | CI Status |
 |---|---|---|---|
-| **Go Unit & Race Tests** | Core engine, IP CIDR filter, path normalization, response modes, and security evasion vectors | `go test -v -race ./...` | [![CI](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml) |
-| **Statement Coverage** | Full test coverage report across all packages (98.4%) | `go test -coverprofile=coverage.out ./...` | ✅ 98.4% Coverage |
+| **Go Unit & Race Tests** | Core engine, IP CIDR filter, path normalization, response modes, and evasion vectors | `go test -v -race ./...` | [![CI](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/routewarden/traefik-warden/actions/workflows/ci.yml) |
+| **Statement Coverage** | Full test coverage report across all packages (98.4%) | `go test -coverprofile=coverage.out ./...` | 98.4% Coverage |
 
 ```bash
-# Run all Go tests with race detector
+# Run tests with the Go race detector
 go test -v -race ./...
 
-# Run statement coverage breakdown
+# Generate coverage profile
 go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
 ```
 
