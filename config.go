@@ -66,6 +66,7 @@ type Config struct {
 	CustomResponseText         string          `json:"customResponseText,omitempty"`
 	SilentDrop                 bool            `json:"silentDrop,omitempty"`
 	CheckQuery                 bool            `json:"checkQuery,omitempty"`
+	Debug                      bool            `json:"debug,omitempty"`                      // Enable verbose debug logging to stdout/stderr
 	Response                   *ResponseConfig `json:"response,omitempty"`
 }
 
@@ -84,6 +85,7 @@ func CreateConfig() *Config {
 		CustomResponseText:         "403 Forbidden: Access to sensitive endpoint is blocked",
 		SilentDrop:                 false,
 		CheckQuery:                 false,
+		Debug:                      false,
 		Response:                   nil,
 	}
 }

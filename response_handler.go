@@ -169,9 +169,14 @@ func NewResponseHandler(respCfg *ResponseConfig, topStatusCode int, topCustomTex
 		proxyHandler = httputil.NewSingleHostReverseProxy(targetURL)
 	}
 
+	isSilentDrop := silentDrop
+	if respCfg != nil && (strings.EqualFold(respCfg.Mode, "silentdrop") || strings.EqualFold(respCfg.Mode, "drop")) {
+		isSilentDrop = true
+	}
+
 	return &ResponseHandler{
 		config:          respCfg,
-		silentDrop:      silentDrop,
+		silentDrop:      isSilentDrop,
 		captchaTemplate: parsedTmpl,
 		proxyHandler:    proxyHandler,
 	}, nil

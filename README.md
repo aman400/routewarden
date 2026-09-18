@@ -154,6 +154,7 @@ http:
 | `allowedIps` | `[]string` | `[]` | Trusted IPv4/IPv6 addresses or CIDR blocks allowed to bypass path inspection. |
 | `methods` | `[]string` | `["GET"]` | HTTP request methods to inspect (for example: `["GET", "POST"]`). Other methods pass through. |
 | `checkQuery` | `bool` | `false` | When true, also inspects query parameters against blocked patterns. |
+| `debug` | `bool` | `false` | When true, enables verbose debug logging to standard output. |
 | `response.mode` | `string` | `"text"` | Action to take when a request is blocked: `"text"`, `"json"`, `"html"`, `"xml"`, `"captcha"`, `"redirect"`, `"proxy"`, `"silentDrop"`, `"gzipBomb"`, `"tarpit"`, `"fakeSuccess"`, `"rateLimitChallenge"`, or `"infiniteStream"`. |
 | `response.statusCode` | `int` | `403` | HTTP status code returned to the client (such as `404`, `403`, `401`, or `429`). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |

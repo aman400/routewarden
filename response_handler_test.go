@@ -133,6 +133,24 @@ func TestResponseHandler_Redirect(t *testing.T) {
 	}
 }
 
+func TestResponseHandler_SilentDrop_ModeConfig(t *testing.T) {
+	cfg := &traefik_warden.ResponseConfig{
+		Mode: "silentDrop",
+	}
+	handler, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if rr.Body.Len() > 0 {
+		t.Errorf("expected empty body for silent drop")
+	}
+}
+
 func TestResponseHandler_SilentDrop(t *testing.T) {
 	handler, err := traefik_warden.NewResponseHandler(nil, http.StatusForbidden, "", true)
 	if err != nil {

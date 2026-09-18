@@ -1084,3 +1084,70 @@ func TestRouteWarden_EmptyPatternStrings(t *testing.T) {
 		t.Errorf("expected /normal to pass, got %d", rr2.Code)
 	}
 }
+
+func TestRouteWarden_DebugLogging(t *testing.T) {
+	cfg := traefik_warden.CreateConfig()
+	cfg.Debug = true
+	cfg.CheckQuery = true
+	cfg.AllowedIPs = []string{"192.168.1.100"}
+	cfg.Methods = []string{"GET"}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "debug-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// 1. Blocked path
+	reqBlock := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrBlock := httptest.NewRecorder()
+	handler.ServeHTTP(rrBlock, reqBlock)
+	if rrBlock.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rrBlock.Code)
+	}
+
+	// 2. Allowed path
+	reqAllow := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	rrAllow := httptest.NewRecorder()
+	handler.ServeHTTP(rrAllow, reqAllow)
+	if rrAllow.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rrAllow.Code)
+	}
+
+	// 3. Whitelisted IP
+	reqIP := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	reqIP.RemoteAddr = "192.168.1.100:5432"
+	rrIP := httptest.NewRecorder()
+	handler.ServeHTTP(rrIP, reqIP)
+	if rrIP.Code != http.StatusOK {
+		t.Errorf("expected 200 for whitelisted IP, got %d", rrIP.Code)
+	}
+
+	// 4. Non-inspected method
+	reqPOST := httptest.NewRequest(http.MethodPost, "/.env", nil)
+	rrPOST := httptest.NewRecorder()
+	handler.ServeHTTP(rrPOST, reqPOST)
+	if rrPOST.Code != http.StatusOK {
+		t.Errorf("expected 200 for bypassed method, got %d", rrPOST.Code)
+	}
+
+	// 5. Blocked query
+	reqQuery := httptest.NewRequest(http.MethodGet, "/test?file=.env", nil)
+	rrQuery := httptest.NewRecorder()
+	handler.ServeHTTP(rrQuery, reqQuery)
+	if rrQuery.Code != http.StatusForbidden {
+		t.Errorf("expected 403 for blocked query, got %d", rrQuery.Code)
+	}
+
+	// 6. Normal benign request
+	reqNormal := httptest.NewRequest(http.MethodGet, "/about", nil)
+	rrNormal := httptest.NewRecorder()
+	handler.ServeHTTP(rrNormal, reqNormal)
+	if rrNormal.Code != http.StatusOK {
+		t.Errorf("expected 200 for normal request, got %d", rrNormal.Code)
+	}
+}

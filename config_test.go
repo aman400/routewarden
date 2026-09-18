@@ -28,6 +28,9 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if cfg.CheckQuery {
 		t.Errorf("expected CheckQuery to default to false")
 	}
+	if cfg.Debug {
+		t.Errorf("expected Debug to default to false")
+	}
 	if len(cfg.AllowPatterns) != 0 {
 		t.Errorf("expected custom AllowPatterns to default to empty slice")
 	}
