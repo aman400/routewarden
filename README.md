@@ -62,7 +62,7 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
-      - "--experimental.plugins.routewarden.version=v0.3.1"
+      - "--experimental.plugins.routewarden.version=v0.3.2"
     ports:
       - "80:80"
     volumes:
@@ -100,7 +100,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/routewarden/traefik-warden
-      version: v0.3.1
+      version: v0.3.2
 ```
 
 #### 2. Dynamic Configuration (`dynamic_conf.yml`)

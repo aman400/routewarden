@@ -1,4 +1,4 @@
-package routewarden_test
+package traefik_warden_test
 
 import (
 	"bufio"
@@ -18,7 +18,7 @@ import (
 )
 
 func TestResponseHandler_JSON(t *testing.T) {
-	cfg := &routewarden.ResponseConfig{
+	cfg := &traefik_warden.ResponseConfig{
 		Mode:       "json",
 		StatusCode: http.StatusTeapot,
 		Body:       `{"error":"blocked","code":418}`,
@@ -27,7 +27,7 @@ func TestResponseHandler_JSON(t *testing.T) {
 		},
 	}
 
-	handler, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	handler, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -51,13 +51,13 @@ func TestResponseHandler_JSON(t *testing.T) {
 }
 
 func TestResponseHandler_HTML(t *testing.T) {
-	cfg := &routewarden.ResponseConfig{
+	cfg := &traefik_warden.ResponseConfig{
 		Mode:       "html",
 		StatusCode: http.StatusForbidden,
 		Body:       "<html><body>Access Restricted</body></html>",
 	}
 
-	handler, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	handler, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -78,17 +78,17 @@ func TestResponseHandler_HTML(t *testing.T) {
 }
 
 func TestResponseHandler_Captcha(t *testing.T) {
-	cfg := &routewarden.ResponseConfig{
+	cfg := &traefik_warden.ResponseConfig{
 		Mode:       "captcha",
 		StatusCode: http.StatusForbidden,
-		Captcha: &routewarden.CaptchaConfig{
+		Captcha: &traefik_warden.CaptchaConfig{
 			Provider: "turnstile",
 			SiteKey:  "0x4AAAAAAtestkey",
 			Title:    "Bot Check",
 		},
 	}
 
-	handler, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	handler, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -110,13 +110,13 @@ func TestResponseHandler_Captcha(t *testing.T) {
 }
 
 func TestResponseHandler_Redirect(t *testing.T) {
-	cfg := &routewarden.ResponseConfig{
+	cfg := &traefik_warden.ResponseConfig{
 		Mode:        "redirect",
 		StatusCode:  http.StatusFound,
 		RedirectURL: "https://example.com/blocked",
 	}
 
-	handler, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	handler, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestResponseHandler_Redirect(t *testing.T) {
 }
 
 func TestResponseHandler_SilentDrop(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(nil, http.StatusForbidden, "", true)
+	handler, err := traefik_warden.NewResponseHandler(nil, http.StatusForbidden, "", true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -152,14 +152,14 @@ func TestResponseHandler_SilentDrop(t *testing.T) {
 }
 
 func TestResponseHandler_InvalidCaptchaTemplate(t *testing.T) {
-	cfg := &routewarden.ResponseConfig{
+	cfg := &traefik_warden.ResponseConfig{
 		Mode: "captcha",
-		Captcha: &routewarden.CaptchaConfig{
+		Captcha: &traefik_warden.CaptchaConfig{
 			Template: "{{.UnclosedBracket",
 		},
 	}
 
-	_, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	_, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
 	if err == nil {
 		t.Errorf("expected error for invalid captcha template")
 	}
@@ -167,7 +167,7 @@ func TestResponseHandler_InvalidCaptchaTemplate(t *testing.T) {
 
 func TestResponseHandler_DefaultTextAndEmptyFallbacks(t *testing.T) {
 	// 1. Default text mode with top-level message
-	handlerText, err := routewarden.NewResponseHandler(nil, http.StatusForbidden, "Access Denied by Text", false)
+	handlerText, err := traefik_warden.NewResponseHandler(nil, http.StatusForbidden, "Access Denied by Text", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestResponseHandler_DefaultTextAndEmptyFallbacks(t *testing.T) {
 	}
 
 	// 2. JSON mode with empty body fallback
-	handlerJSON, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerJSON, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:       "json",
 		StatusCode: http.StatusForbidden,
 	}, 0, "", false)
@@ -201,7 +201,7 @@ func TestResponseHandler_DefaultTextAndEmptyFallbacks(t *testing.T) {
 	}
 
 	// 3. HTML mode with empty body fallback
-	handlerHTML, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerHTML, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:       "html",
 		StatusCode: http.StatusNotFound,
 	}, 0, "", false)
@@ -218,10 +218,10 @@ func TestResponseHandler_DefaultTextAndEmptyFallbacks(t *testing.T) {
 	}
 
 	// 4. Custom Captcha Template
-	handlerCustomCaptcha, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerCustomCaptcha, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:       "captcha",
 		StatusCode: http.StatusForbidden,
-		Captcha: &routewarden.CaptchaConfig{
+		Captcha: &traefik_warden.CaptchaConfig{
 			Template: "<div>{{.Title}} - SiteKey: {{.SiteKey}}</div>",
 			Title:    "Custom Challenge",
 			SiteKey:  "my-custom-key-999",
@@ -242,12 +242,12 @@ func TestResponseHandler_DefaultTextAndEmptyFallbacks(t *testing.T) {
 
 func TestResponseHandler_GzipBomb(t *testing.T) {
 	// 1. Test gzipBomb mode with default size (10MB)
-	cfg := &routewarden.ResponseConfig{
+	cfg := &traefik_warden.ResponseConfig{
 		Mode:       "gzipBomb",
 		StatusCode: http.StatusOK,
 	}
 
-	handler, err := routewarden.NewResponseHandler(cfg, 0, "", false)
+	handler, err := traefik_warden.NewResponseHandler(cfg, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -290,14 +290,14 @@ func TestResponseHandler_GzipBomb(t *testing.T) {
 	}
 
 	// 2. Test alias mode "bomb" with custom size and custom status code
-	cfgCustom := &routewarden.ResponseConfig{
+	cfgCustom := &traefik_warden.ResponseConfig{
 		Mode:        "bomb",
 		StatusCode:  http.StatusForbidden,
 		GzipBombMB:  2,
 		ContentType: "text/plain",
 	}
 
-	handlerCustom, err := routewarden.NewResponseHandler(cfgCustom, 0, "", false)
+	handlerCustom, err := traefik_warden.NewResponseHandler(cfgCustom, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -318,7 +318,7 @@ func TestResponseHandler_GzipBomb(t *testing.T) {
 
 func TestResponseHandler_XML(t *testing.T) {
 	// Default XML
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:       "xml",
 		StatusCode: http.StatusForbidden,
 	}, 0, "", false)
@@ -341,7 +341,7 @@ func TestResponseHandler_XML(t *testing.T) {
 	}
 
 	// Custom XML body
-	handlerCustom, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerCustom, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:       "xml",
 		StatusCode: http.StatusUnauthorized,
 		Body:       "<soap:Fault><faultcode>Client</faultcode></soap:Fault>",
@@ -354,7 +354,7 @@ func TestResponseHandler_XML(t *testing.T) {
 }
 
 func TestResponseHandler_RateLimitChallenge(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:              "rateLimitChallenge",
 		RetryAfterSeconds: 600,
 	}, 0, "", false)
@@ -378,7 +378,7 @@ func TestResponseHandler_RateLimitChallenge(t *testing.T) {
 }
 
 func TestResponseHandler_FakeSuccessDecoy(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode: "fakeSuccess",
 	}, 0, "", false)
 	if err != nil {
@@ -453,7 +453,7 @@ func TestResponseHandler_Proxy(t *testing.T) {
 		return resp, nil
 	})
 
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:     "proxy",
 		ProxyURL: "http://honeypot.local",
 	}, 0, "", false)
@@ -479,7 +479,7 @@ func TestResponseHandler_Proxy(t *testing.T) {
 	}
 
 	// 2. Test invalid proxy URL error
-	_, errInvalid := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	_, errInvalid := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:     "proxy",
 		ProxyURL: "://invalid-url",
 	}, 0, "", false)
@@ -488,7 +488,7 @@ func TestResponseHandler_Proxy(t *testing.T) {
 	}
 
 	// 3. Test empty proxy fallback
-	handlerEmpty, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerEmpty, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode: "proxy",
 	}, 0, "", false)
 	rrEmpty := httptest.NewRecorder()
@@ -505,7 +505,7 @@ func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestResponseHandler_InfiniteStream(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:         "infiniteStream",
 		StatusCode:   http.StatusOK,
 		StreamSizeMB: 1, // 1MB in test
@@ -527,7 +527,7 @@ func TestResponseHandler_InfiniteStream(t *testing.T) {
 }
 
 func TestResponseHandler_Tarpit(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:                     "tarpit",
 		StatusCode:               http.StatusOK,
 		TarpitDelayMs:           5,  // Fast delay for testing
@@ -550,7 +550,7 @@ func TestResponseHandler_Tarpit(t *testing.T) {
 	}
 
 	// Test tarpit natural timeout branch
-	handlerTimeout, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerTimeout, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:                     "tarpit",
 		TarpitDelayMs:           5,
 		TarpitMaxDurationSeconds: 1, // 1 second timeout
@@ -565,7 +565,7 @@ func TestResponseHandler_Tarpit(t *testing.T) {
 
 func TestResponseHandler_EdgeCases(t *testing.T) {
 	// 1. Custom Body & Status for FakeSuccess
-	handlerCustomDecoy, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerCustomDecoy, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:        "fakeSuccess",
 		StatusCode:  http.StatusAccepted,
 		ContentType: "application/json",
@@ -585,7 +585,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 
 	// 2. Redirect without code (should default to 302 Found)
-	handlerRedir, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerRedir, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:        "redirect",
 		RedirectURL: "https://example.com/honeypot",
 		StatusCode:  200, // Invalid redirect code should fallback to 302
@@ -600,7 +600,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 
 	// 3. Redirect without redirectURL (should default to "/")
-	handlerRedirDefault, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerRedirDefault, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode: "redirect",
 	}, 0, "", false)
 	rrRedirDefault := httptest.NewRecorder()
@@ -610,7 +610,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 
 	// 4. RateLimitChallenge with custom body and status code
-	handlerRL, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerRL, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:              "rateLimit",
 		StatusCode:        http.StatusTooManyRequests,
 		RetryAfterSeconds: 120,
@@ -627,7 +627,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 
 	// 5. XML with custom content type and status code
-	handlerXML, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerXML, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:        "xml",
 		StatusCode:  http.StatusPaymentRequired,
 		ContentType: "application/soap+xml",
@@ -642,7 +642,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 
 	// 6. InfiniteStream default fallback size (<=0 MB defaults to 50MB in production, tested with 0)
-	handlerStreamZero, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerStreamZero, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:         "infiniteStream",
 		StreamSizeMB: -1,
 	}, 0, "", false)
@@ -651,7 +651,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 	}
 
 	// 7. GzipBomb with 0 MB defaults
-	handlerBombZero, _ := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handlerBombZero, _ := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:       "gzipBomb",
 		GzipBombMB: 0,
 	}, 0, "", false)
@@ -664,7 +664,7 @@ func TestResponseHandler_EdgeCases(t *testing.T) {
 
 func TestResponseHandler_NilConfig_Defaults(t *testing.T) {
 	// nil respCfg + zero topStatusCode should default to 403 and mode "text"
-	handler, err := routewarden.NewResponseHandler(nil, 0, "", false)
+	handler, err := traefik_warden.NewResponseHandler(nil, 0, "", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -683,7 +683,7 @@ func TestResponseHandler_NilConfig_Defaults(t *testing.T) {
 
 func TestResponseHandler_NilConfig_WithTopStatusCode(t *testing.T) {
 	// nil respCfg + topStatusCode=404 should use 404
-	handler, err := routewarden.NewResponseHandler(nil, http.StatusNotFound, "Custom Not Found", false)
+	handler, err := traefik_warden.NewResponseHandler(nil, http.StatusNotFound, "Custom Not Found", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -701,7 +701,7 @@ func TestResponseHandler_NilConfig_WithTopStatusCode(t *testing.T) {
 }
 
 func TestResponseHandler_TopStatusCodeFallback_WithRespConfig(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		StatusCode: 0,
 		Mode:       "text",
 	}, http.StatusTeapot, "", false)
@@ -720,7 +720,7 @@ func TestResponseHandler_TopStatusCodeFallback_WithRespConfig(t *testing.T) {
 
 func TestResponseHandler_ZeroStatusCode_EmptyMode(t *testing.T) {
 	// respCfg with StatusCode=0 and Mode="" should default to 403 and "text"
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		StatusCode: 0,
 		Mode:       "",
 	}, 0, "", false)
@@ -768,7 +768,7 @@ func (h *hijackableRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 func TestResponseHandler_SilentDrop_WithHijacker(t *testing.T) {
-	handler, err := routewarden.NewResponseHandler(nil, 0, "", true)
+	handler, err := traefik_warden.NewResponseHandler(nil, 0, "", true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -789,7 +789,7 @@ func TestResponseHandler_SilentDrop_WithHijacker(t *testing.T) {
 
 func TestResponseHandler_TarpitZeroDefaults(t *testing.T) {
 	// Tarpit with zero delay and zero max duration should use defaults
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:                     "tarpit",
 		StatusCode:               http.StatusForbidden,
 		TarpitDelayMs:            0,
@@ -815,7 +815,7 @@ func TestResponseHandler_TarpitZeroDefaults(t *testing.T) {
 
 func TestResponseHandler_RateLimitZeroDefaults(t *testing.T) {
 	// RateLimit with zero RetryAfterSeconds should fall back to 300
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:              "ratelimit",
 		RetryAfterSeconds: 0,
 	}, 0, "", false)
@@ -837,7 +837,7 @@ func TestResponseHandler_RateLimitZeroDefaults(t *testing.T) {
 
 func TestResponseHandler_InfiniteStreamZeroDefaults(t *testing.T) {
 	// InfiniteStream with zero StreamSizeMB should fall back to default 50MB
-	handler, err := routewarden.NewResponseHandler(&routewarden.ResponseConfig{
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
 		Mode:         "infiniteStream",
 		StatusCode:   http.StatusOK,
 		StreamSizeMB: 0,

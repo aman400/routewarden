@@ -1,4 +1,4 @@
-package routewarden_test
+package traefik_warden_test
 
 import (
 	"testing"
@@ -85,7 +85,7 @@ func TestPathNormalizer_ExtractCandidatePaths(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			candidates := routewarden.ExtractCandidatePaths(tc.rawPath, tc.path, tc.requestURI)
+			candidates := traefik_warden.ExtractCandidatePaths(tc.rawPath, tc.path, tc.requestURI)
 
 			for _, expected := range tc.expectedContains {
 				found := false

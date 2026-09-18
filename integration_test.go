@@ -1,4 +1,4 @@
-package routewarden_test
+package traefik_warden_test
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func TestRouteWarden_E2E_Pipeline(t *testing.T) {
 		})
 	}
 
-	cfg := routewarden.CreateConfig()
+	cfg := traefik_warden.CreateConfig()
 	cfg.PathPatterns = []string{
 		`(?i)^/admin(/.*)?$`,
 		`(?i).*\.secret$`,
@@ -38,7 +38,7 @@ func TestRouteWarden_E2E_Pipeline(t *testing.T) {
 		"10.50.0.0/16",
 		"192.168.1.100",
 	}
-	cfg.Response = &routewarden.ResponseConfig{
+	cfg.Response = &traefik_warden.ResponseConfig{
 		Mode:       "json",
 		StatusCode: http.StatusForbidden,
 		Body:       `{"error":"access_denied","code":403}`,
@@ -47,7 +47,7 @@ func TestRouteWarden_E2E_Pipeline(t *testing.T) {
 		},
 	}
 
-	warden, err := routewarden.New(context.Background(), backendHandler, cfg, "e2e-warden")
+	warden, err := traefik_warden.New(context.Background(), backendHandler, cfg, "e2e-warden")
 	if err != nil {
 		t.Fatalf("failed to initialize plugin: %v", err)
 	}
