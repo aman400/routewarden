@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -87,12 +88,22 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		return nil, fmt.Errorf("routewarden [%s]: %w", name, err)
 	}
 
-	respHandler, err := NewResponseHandler(config.Response, config.StatusCode, config.CustomResponseText, config.SilentDrop)
+	respConfig := config.Response
+	if respConfig == nil {
+		respConfig = &ResponseConfig{Mode: "text"}
+	}
+	if strings.TrimSpace(config.Mode) != "" {
+		respConfig.Mode = strings.TrimSpace(config.Mode)
+	} else if strings.TrimSpace(config.Action) != "" {
+		respConfig.Mode = strings.TrimSpace(config.Action)
+	}
+
+	respHandler, err := NewResponseHandler(respConfig, config.StatusCode, config.CustomResponseText, config.SilentDrop)
 	if err != nil {
 		return nil, fmt.Errorf("routewarden [%s]: %w", name, err)
 	}
 
-	return &RouteWarden{
+	rw := &RouteWarden{
 		next:            next,
 		name:            name,
 		enabled:         config.Enabled,
@@ -103,12 +114,19 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		ipFilter:        ipFilter,
 		checkQuery:      config.CheckQuery,
 		responseHandler: respHandler,
-	}, nil
+	}
+
+	rw.logDebug("initialized (enabled=%t, debug=%t, blockPatterns=%d, allowPatterns=%d, mode=%s)",
+		rw.enabled, rw.debug, len(rw.blockRegexes), len(rw.allowRegexes), rw.responseHandler.config.Mode)
+
+	return rw, nil
 }
 
 func (rw *RouteWarden) logDebug(format string, v ...interface{}) {
 	if rw.debug {
-		log.Printf("[DEBUG] routewarden [%s]: "+format, append([]interface{}{rw.name}, v...)...)
+		msg := fmt.Sprintf(format, v...)
+		log.Printf("[DEBUG] routewarden [%s]: %s", rw.name, msg)
+		fmt.Fprintf(os.Stdout, "[DEBUG] routewarden [%s]: %s\n", rw.name, msg)
 	}
 }
 

@@ -1,0 +1,25 @@
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: routewarden-traefik-sample
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--log.level=DEBUG"
+      - "--entrypoints.web.address=:80"
+      # Load file provider (rock-solid, zero socket permissions needed)
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
+      # Load RouteWarden directly from local repository
+      - "--experimental.localplugins.routewarden.modulename=github.com/routewarden/traefik-warden"
+    ports:
+      - "80:80"       # Web entrypoint
+      - "8080:8080"   # Traefik Dashboard (http://localhost:8080)
+    volumes:
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      # Mount parent repository root directly into Traefik's local plugin source tree
+      - ..:/plugins-local/src/github.com/routewarden/traefik-warden:ro
+
+  whoami:
+    image: traefik/whoami:latest
+    container_name: routewarden-whoami-sample

@@ -40,8 +40,8 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if len(cfg.Methods) != 1 || cfg.Methods[0] != "GET" {
 		t.Errorf("expected default Methods to be ['GET'], got %v", cfg.Methods)
 	}
-	if cfg.Response != nil {
-		t.Errorf("expected default Response to be nil so top-level configs are used cleanly")
+	if cfg.Response == nil || cfg.Response.Mode != "text" {
+		t.Errorf("expected default Response to be initialized with mode text for label unmarshaling compatibility, got %v", cfg.Response)
 	}
 }
 
