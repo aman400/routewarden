@@ -88,6 +88,48 @@ http:
       middlewares: [warden-text]
       service: whoami-service
 
+    # --- Flag & Feature Testing Routers ---
+    # A. checkQuery Flag
+    router-flag-checkquery:
+      rule: "PathPrefix(`/flag/checkquery`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-checkquery]
+      service: whoami-service
+
+    # B. methods Filtering Flag (only inspect POST)
+    router-flag-methods:
+      rule: "PathPrefix(`/flag/methods`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-methods]
+      service: whoami-service
+
+    # C. allowedIps Flag (127.0.0.1 / ::1 whitelisted)
+    router-flag-allowedips:
+      rule: "PathPrefix(`/flag/allowedips`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-allowedips]
+      service: whoami-service
+
+    # D. custom blockPatterns Flag
+    router-flag-custompatterns:
+      rule: "PathPrefix(`/flag/custompatterns`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-custompatterns]
+      service: whoami-service
+
+    # E. enabled: false Flag (bypasses all blocking)
+    router-flag-disabled:
+      rule: "PathPrefix(`/flag/disabled`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-disabled]
+      service: whoami-service
+
+
   services:
     whoami-service:
       loadBalancer:
@@ -194,3 +236,57 @@ http:
           enabled: true
           debug: true
           mode: text
+
+    # --- Flag & Feature Middleware Definitions ---
+    # A. checkQuery: true (inspect query string params)
+    warden-flag-checkquery:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          checkQuery: true
+          mode: json
+
+    # B. methods: ["POST"] (GET requests bypass, POST requests blocked on sensitive paths)
+    warden-flag-methods:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          methods:
+            - POST
+          mode: json
+
+    # C. allowedIps: exempt local subnet & loopback from blocking
+    warden-flag-allowedips:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          allowedIps:
+            - "127.0.0.1/32"
+            - "::1/128"
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+          mode: json
+
+    # D. blockPatterns: custom regex patterns (`(?i)^/admin/secret$`)
+    warden-flag-custompatterns:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          enableDefaultPatterns: false
+          blockPatterns:
+            - "(?i)^/flag/custompatterns/secret$"
+          mode: json
+
+    # E. enabled: false (completely bypasses RouteWarden)
+    warden-flag-disabled:
+      plugin:
+        routewarden:
+          enabled: false
+          debug: true
+          mode: json
+

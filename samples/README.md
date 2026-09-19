@@ -35,7 +35,11 @@ Whenever an attacker probes a blocked route (such as `/.env` or `/wp-login.php`)
 ```bash
 ./test.sh
 ```
-This tests all 11 defensive modes and validates the emission of structured JSON security audit logs.
+This comprehensive test script validates:
+- **All 11 Defensive Modes** (`fakeSuccess`, `silentDrop`, `json`, `html`, `redirect`, `rateLimit`, `xml`, `captcha`, `gzipBomb`, `garbageStream`, `text`)
+- **Inspection Flags & Filtering** (`checkQuery`, HTTP `methods` filtering, `allowedIps` CIDR whitelisting, custom `blockPatterns`, and `enabled: false`)
+- **Security Audit Logs** (emission of structured JSON `routewarden_block` events for CrowdSec / SIEM)
+
 
 
 ---

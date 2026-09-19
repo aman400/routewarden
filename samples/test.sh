@@ -11,14 +11,15 @@ test_mode() {
   local path="$2"
   local expected_status="$3"
   local extra_check="$4"
+  local method="${5:-GET}"
 
-  echo -n "👉 Mode: $mode_name ($path)... "
+  echo -n "👉 $mode_name ($method $path)... "
   
   if [ "$mode_name" = "silentDrop" ]; then
     # Silent drop should close connection without response
     local err
     set +e
-    err=$(curl -s -v "$BASE_URL$path" 2>&1)
+    err=$(curl -s -X "$method" -v "$BASE_URL$path" 2>&1)
     set -e
     if echo "$err" | grep -q -E "Empty reply|reset by peer|Connection reset"; then
       echo "✅ PASS (Connection closed abruptly / Empty reply)"
@@ -33,7 +34,7 @@ test_mode() {
   trap 'rm -f "$header_file"' RETURN
 
   # Safely dump headers to temp file, discard binary response body
-  curl -s -D "$header_file" -o /dev/null "$BASE_URL$path"
+  curl -s -X "$method" -D "$header_file" -o /dev/null "$BASE_URL$path"
 
   local status
   local header
@@ -68,6 +69,27 @@ test_mode "captcha (Turnstile Page)"   "/mode/captcha/.env"     "403" "Content-T
 test_mode "gzipBomb (Compressed Bomb)" "/mode/gzipbomb/.env"    "403" "Content-Encoding: gzip"
 test_mode "text (Plain Text 403)"      "/mode/text/.env"        "403" "Content-Type: text/plain"
 test_mode "silentDrop"                 "/mode/silentdrop/.env"  ""
+
+echo ""
+echo "--- Testing Configuration Flags & Inspection Rules ---"
+# 1. checkQuery Flag: verifies sensitive parameter in query string is intercepted
+test_mode "checkQuery: benign query"        "/flag/checkquery/search?q=hello" "200"
+test_mode "checkQuery: blocked query param" "/flag/checkquery/search?file=.env" "403"
+
+# 2. methods Flag: only inspects POST, GET passes through to backend
+test_mode "methods: GET bypasses inspection" "/flag/methods/.env" "200" "" "GET"
+test_mode "methods: POST blocked on probe"   "/flag/methods/.env" "403" "" "POST"
+
+# 3. allowedIps Flag: whitelisted client IP bypasses blocking
+test_mode "allowedIps: whitelisted IP bypasses" "/flag/allowedips/.env" "200"
+
+# 4. custom blockPatterns Flag: custom pattern blocked, default unlisted path allowed
+test_mode "blockPatterns: custom pattern blocked" "/flag/custompatterns/secret" "403"
+test_mode "blockPatterns: non-matching path allowed" "/flag/custompatterns/public" "200"
+
+# 5. enabled Flag: enabled=false completely disables filtering
+test_mode "enabled=false: all probes pass" "/flag/disabled/.env" "200"
+
 
 echo ""
 echo "--- Testing Structured JSON Security Audit Logs (CrowdSec / SIEM) ---"
