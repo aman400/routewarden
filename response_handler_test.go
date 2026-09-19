@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
+	"html/template"
 	"io"
 	"net"
 	"net/http"
@@ -879,3 +880,92 @@ func TestResponseHandler_InfiniteStreamZeroDefaults(t *testing.T) {
 		t.Errorf("expected substantial body from infiniteStream, got %d bytes", rr.Body.Len())
 	}
 }
+
+func TestResponseHandler_Captcha_TemplateExecutionError(t *testing.T) {
+	handler, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
+		Mode:       "captcha",
+		StatusCode: http.StatusForbidden,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Inject a template that parses successfully but fails at execution time
+	faultyTmpl, err := template.New("faulty").Parse("{{.NoSuchField.CannotIndex}}")
+	if err != nil {
+		t.Fatalf("unexpected template parse error: %v", err)
+	}
+	handler.SetCaptchaTemplateForTest(faultyTmpl)
+
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeBlockedRequest(rr, req)
+
+	if !strings.Contains(rr.Body.String(), "Security Challenge Required") {
+		t.Errorf("expected fallback text on captcha template execution failure, got: %q", rr.Body.String())
+	}
+}
+
+type errResponseWriter struct {
+	header http.Header
+}
+
+func newErrResponseWriter() *errResponseWriter {
+	return &errResponseWriter{header: make(http.Header)}
+}
+
+func (e *errResponseWriter) Header() http.Header {
+	return e.header
+}
+
+func (e *errResponseWriter) Write([]byte) (int, error) {
+	return 0, io.ErrClosedPipe
+}
+
+func (e *errResponseWriter) WriteHeader(statusCode int) {}
+
+func TestResponseHandler_ClientDisconnect_Streams(t *testing.T) {
+	// 1. GzipBomb handles client disconnect/write error gracefully
+	handlerBomb, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
+		Mode:       "gzipBomb",
+		StatusCode: http.StatusOK,
+		GzipBombMB: 1,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	errWriterBomb := newErrResponseWriter()
+	// Must not panic or hang
+	handlerBomb.ServeBlockedRequest(errWriterBomb, req)
+
+	// 2. InfiniteStream handles client disconnect/write error gracefully
+	handlerStream, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
+		Mode:         "infiniteStream",
+		StatusCode:   http.StatusOK,
+		StreamSizeMB: 1,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	errWriterStream := newErrResponseWriter()
+	handlerStream.ServeBlockedRequest(errWriterStream, req)
+
+	// 3. Tarpit handles client disconnect on ticker write gracefully
+	handlerTarpit, err := traefik_warden.NewResponseHandler(&traefik_warden.ResponseConfig{
+		Mode:                     "tarpit",
+		StatusCode:               http.StatusOK,
+		TarpitDelayMs:           1,
+		TarpitMaxDurationSeconds: 1,
+	}, 0, "", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	errWriterTarpit := newErrResponseWriter()
+	handlerTarpit.ServeBlockedRequest(errWriterTarpit, req)
+}
+
+

@@ -62,7 +62,7 @@ services:
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--experimental.plugins.routewarden.modulename=github.com/routewarden/traefik-warden"
-      - "--experimental.plugins.routewarden.version=v0.3.2"
+      - "--experimental.plugins.routewarden.version=v0.3.3"
     ports:
       - "80:80"
     volumes:
@@ -100,7 +100,7 @@ experimental:
   plugins:
     routewarden:
       moduleName: github.com/routewarden/traefik-warden
-      version: v0.3.2
+      version: v0.3.3
 ```
 
 #### 2. Dynamic Configuration (`dynamic_conf.yml`)
@@ -155,6 +155,7 @@ http:
 | `methods` | `[]string` | `["GET"]` | HTTP request methods to inspect (for example: `["GET", "POST"]`). Other methods pass through. |
 | `checkQuery` | `bool` | `false` | When true, also inspects query parameters against blocked patterns. |
 | `debug` | `bool` | `false` | When true, enables verbose debug logging to standard output. |
+| `securityLog` | `bool` | `true` | When true, emits structured JSON security audit logs on block (CrowdSec / SIEM compatible). |
 | `response.mode` | `string` | `"text"` | Action to take when a request is blocked: `"text"`, `"json"`, `"html"`, `"xml"`, `"captcha"`, `"redirect"`, `"proxy"`, `"silentDrop"`, `"gzipBomb"`, `"tarpit"`, `"fakeSuccess"`, `"rateLimitChallenge"`, or `"infiniteStream"`. |
 | `response.statusCode` | `int` | `403` | HTTP status code returned to the client (such as `404`, `403`, `401`, or `429`). |
 | `response.body` | `string` | `""` | Custom payload returned in the response body. |
@@ -177,6 +178,7 @@ For detailed setup instructions, architecture deep dives, and production example
 - [Response Modes & Defense Actions](https://routewarden.github.io/docs/reference/response-modes)
 - [Custom Path Patterns & Regex](https://routewarden.github.io/docs/reference/custom-paths)
 - [Anti-Evasion Engine](https://routewarden.github.io/docs/reference/anti-evasion)
+- [CrowdSec Integration & Auto-Ban](https://routewarden.github.io/docs/examples/crowdsec)
 - [Global EntryPoint Shield Recipe](https://routewarden.github.io/docs/examples/docker-compose-global)
 - [IP & CIDR Whitelisting](https://routewarden.github.io/docs/examples/ip-whitelisting)
 - [Cloudflare Turnstile & hCaptcha](https://routewarden.github.io/docs/examples/captcha)

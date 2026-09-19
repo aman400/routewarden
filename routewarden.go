@@ -2,12 +2,15 @@ package traefik_warden
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // RouteWarden is the Traefik middleware plugin handler.
@@ -16,6 +19,7 @@ type RouteWarden struct {
 	name            string
 	enabled         bool
 	debug           bool
+	securityLog     bool
 	methods         map[string]struct{}
 	blockRegexes    []*regexp.Regexp
 	allowRegexes    []*regexp.Regexp
@@ -87,28 +91,81 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		return nil, fmt.Errorf("routewarden [%s]: %w", name, err)
 	}
 
-	respHandler, err := NewResponseHandler(config.Response, config.StatusCode, config.CustomResponseText, config.SilentDrop)
+	respConfig := config.Response
+	if respConfig == nil {
+		respConfig = &ResponseConfig{Mode: "text"}
+	}
+	if strings.TrimSpace(config.Mode) != "" {
+		respConfig.Mode = strings.TrimSpace(config.Mode)
+	} else if strings.TrimSpace(config.Action) != "" {
+		respConfig.Mode = strings.TrimSpace(config.Action)
+	}
+
+	respHandler, err := NewResponseHandler(respConfig, config.StatusCode, config.CustomResponseText, config.SilentDrop)
 	if err != nil {
 		return nil, fmt.Errorf("routewarden [%s]: %w", name, err)
 	}
 
-	return &RouteWarden{
+	rw := &RouteWarden{
 		next:            next,
 		name:            name,
 		enabled:         config.Enabled,
 		debug:           config.Debug,
+		securityLog:     config.SecurityLog,
 		methods:         methodsMap,
 		blockRegexes:    compiledBlockRegexes,
 		allowRegexes:    compiledAllowRegexes,
 		ipFilter:        ipFilter,
 		checkQuery:      config.CheckQuery,
 		responseHandler: respHandler,
-	}, nil
+	}
+
+	rw.logDebug("initialized (enabled=%t, debug=%t, securityLog=%t, blockPatterns=%d, allowPatterns=%d, mode=%s)",
+		rw.enabled, rw.debug, rw.securityLog, len(rw.blockRegexes), len(rw.allowRegexes), rw.responseHandler.config.Mode)
+
+	return rw, nil
 }
 
 func (rw *RouteWarden) logDebug(format string, v ...interface{}) {
 	if rw.debug {
-		log.Printf("[DEBUG] routewarden [%s]: "+format, append([]interface{}{rw.name}, v...)...)
+		msg := fmt.Sprintf(format, v...)
+		log.Printf("[DEBUG] routewarden [%s]: %s", rw.name, msg)
+		fmt.Fprintf(os.Stdout, "[DEBUG] routewarden [%s]: %s\n", rw.name, msg)
+	}
+}
+
+// logSecurityEvent emits structured JSON security audit events (compatible with CrowdSec, SIEM, fail2ban).
+func (rw *RouteWarden) logSecurityEvent(req *http.Request, matchedTarget string, pattern string, reason string) {
+	if !rw.securityLog {
+		return
+	}
+	clientIP := ExtractClientIP(req)
+	mode := "text"
+	if rw.responseHandler != nil {
+		if rw.responseHandler.silentDrop {
+			mode = "silentDrop"
+		} else if rw.responseHandler.config != nil && rw.responseHandler.config.Mode != "" {
+			mode = rw.responseHandler.config.Mode
+		}
+	}
+
+	event := map[string]interface{}{
+		"type":        "routewarden_block",
+		"timestamp":   time.Now().UTC().Format(time.RFC3339),
+		"plugin":      rw.name,
+		"client_ip":   clientIP,
+		"method":      req.Method,
+		"path":        matchedTarget,
+		"request_uri": req.RequestURI,
+		"pattern":     pattern,
+		"action":      mode,
+		"reason":      reason,
+		"user_agent":  req.UserAgent(),
+	}
+
+	data, err := json.Marshal(event)
+	if err == nil {
+		fmt.Fprintf(os.Stdout, "%s\n", string(data))
 	}
 }
 
@@ -149,6 +206,7 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for _, p := range candidatePaths {
 		if re := rw.findMatchingBlock(p); re != nil {
 			rw.logDebug("path %q blocked by pattern %q (mode: %s)", p, re.String(), rw.responseHandler.config.Mode)
+			rw.logSecurityEvent(req, p, re.String(), "path_blocked")
 			rw.responseHandler.ServeBlockedRequest(w, req)
 			return
 		}
@@ -163,11 +221,13 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 		if re := rw.findMatchingBlock(unescapedQuery); re != nil {
 			rw.logDebug("unescaped query %q blocked by pattern %q", unescapedQuery, re.String())
+			rw.logSecurityEvent(req, unescapedQuery, re.String(), "query_blocked")
 			rw.responseHandler.ServeBlockedRequest(w, req)
 			return
 		}
 		if re := rw.findMatchingBlock(req.URL.RawQuery); re != nil {
 			rw.logDebug("raw query %q blocked by pattern %q", req.URL.RawQuery, re.String())
+			rw.logSecurityEvent(req, req.URL.RawQuery, re.String(), "query_blocked")
 			rw.responseHandler.ServeBlockedRequest(w, req)
 			return
 		}
@@ -177,6 +237,7 @@ func (rw *RouteWarden) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			for _, val := range values {
 				if re := rw.findMatchingBlock(val); re != nil {
 					rw.logDebug("query param %q with value %q blocked by pattern %q", key, val, re.String())
+					rw.logSecurityEvent(req, val, re.String(), "query_param_blocked")
 					rw.responseHandler.ServeBlockedRequest(w, req)
 					return
 				}

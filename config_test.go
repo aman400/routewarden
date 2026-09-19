@@ -31,6 +31,9 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if cfg.Debug {
 		t.Errorf("expected Debug to default to false")
 	}
+	if !cfg.SecurityLog {
+		t.Errorf("expected SecurityLog to default to true")
+	}
 	if len(cfg.AllowPatterns) != 0 {
 		t.Errorf("expected custom AllowPatterns to default to empty slice")
 	}
@@ -40,8 +43,8 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if len(cfg.Methods) != 1 || cfg.Methods[0] != "GET" {
 		t.Errorf("expected default Methods to be ['GET'], got %v", cfg.Methods)
 	}
-	if cfg.Response != nil {
-		t.Errorf("expected default Response to be nil so top-level configs are used cleanly")
+	if cfg.Response == nil || cfg.Response.Mode != "text" {
+		t.Errorf("expected default Response to be initialized with mode text for label unmarshaling compatibility, got %v", cfg.Response)
 	}
 }
 
