@@ -31,6 +31,9 @@ func TestCreateConfig_Defaults(t *testing.T) {
 	if cfg.Debug {
 		t.Errorf("expected Debug to default to false")
 	}
+	if !cfg.SecurityLog {
+		t.Errorf("expected SecurityLog to default to true")
+	}
 	if len(cfg.AllowPatterns) != 0 {
 		t.Errorf("expected custom AllowPatterns to default to empty slice")
 	}

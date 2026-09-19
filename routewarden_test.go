@@ -1151,3 +1151,90 @@ func TestRouteWarden_DebugLogging(t *testing.T) {
 		t.Errorf("expected 200 for normal request, got %d", rrNormal.Code)
 	}
 }
+
+func TestRouteWarden_SecurityLog_Toggling(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// 1. SecurityLog = false
+	cfgNoLog := traefik_warden.CreateConfig()
+	cfgNoLog.SecurityLog = false
+
+	handlerNoLog, err := traefik_warden.New(context.Background(), next, cfgNoLog, "no-sec-log")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rr := httptest.NewRecorder()
+	handlerNoLog.ServeHTTP(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rr.Code)
+	}
+
+	// 2. SecurityLog = true with SilentDrop = true
+	cfgSilent := traefik_warden.CreateConfig()
+	cfgSilent.SecurityLog = true
+	cfgSilent.SilentDrop = true
+	cfgSilent.Response = nil
+
+	handlerSilent, err := traefik_warden.New(context.Background(), next, cfgSilent, "silent-sec-log")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	reqSilent := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	rrSilent := httptest.NewRecorder()
+	handlerSilent.ServeHTTP(rrSilent, reqSilent)
+	if rrSilent.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rrSilent.Code)
+	}
+}
+
+func TestRouteWarden_CheckQuery_MalformedUnescape(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	cfg := traefik_warden.CreateConfig()
+	cfg.CheckQuery = true
+	cfg.BlockPatterns = []string{`(?i)malicious`}
+
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "malformed-query-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Send request with malformed percent-encoding (%ZZ) combined with blocked word
+	req := httptest.NewRequest(http.MethodGet, "/search?q=%ZZmalicious", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403 when malformed query contains blocked pattern, got %d", rr.Code)
+	}
+}
+
+func TestRouteWarden_CheckQuery_RawQueryOnly(t *testing.T) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	// Pattern matches the literal %20 or percent-encoded token in raw query, but not in unescaped space
+	cfg := traefik_warden.CreateConfig()
+	cfg.CheckQuery = true
+	cfg.BlockPatterns = []string{`%20bad`}
+
+	handler, err := traefik_warden.New(context.Background(), next, cfg, "raw-query-test")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/search?q=%20bad", nil)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403 when raw query matches pattern, got %d", rr.Code)
+	}
+}
+

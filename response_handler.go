@@ -190,6 +190,12 @@ func (h *ResponseHandler) SetProxyHandlerForTest(p http.Handler) {
 	h.proxyHandler = p
 }
 
+// SetCaptchaTemplateForTest allows unit tests to inject custom/faulty captcha templates.
+func (h *ResponseHandler) SetCaptchaTemplateForTest(tmpl *template.Template) {
+	h.captchaTemplate = tmpl
+}
+
+
 // ServeBlockedRequest handles writing the configured response to the client.
 func (h *ResponseHandler) ServeBlockedRequest(w http.ResponseWriter, req *http.Request) {
 	if h.silentDrop {

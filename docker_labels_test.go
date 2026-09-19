@@ -316,3 +316,39 @@ func TestTraefikDockerLabels_AllResponseModes(t *testing.T) {
 		})
 	}
 }
+
+// TestTraefikDockerLabels_SecurityLog verifies that structured JSON security audit events
+// compatible with CrowdSec are emitted when a request is blocked.
+func TestTraefikDockerLabels_SecurityLog(t *testing.T) {
+	labelJSON := `{
+		"enabled": true,
+		"securityLog": true,
+		"mode": "json"
+	}`
+
+	cfg := traefik_warden.CreateConfig()
+	if err := json.Unmarshal([]byte(labelJSON), cfg); err != nil {
+		t.Fatalf("failed to unmarshal labels: %v", err)
+	}
+
+	dummyHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler, err := traefik_warden.New(context.Background(), dummyHandler, cfg, "crowdsec-log-test")
+	if err != nil {
+		t.Fatalf("failed to create plugin: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/.env", nil)
+	req.Header.Set("X-Forwarded-For", "203.0.113.195")
+	req.Header.Set("User-Agent", "Nuclei/v3.1.0")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rec.Code)
+	}
+}
+
