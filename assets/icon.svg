@@ -19,12 +19,6 @@
       <stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
 
-    <!-- Shield Inner Fill Gradient -->
-    <linearGradient id="shieldFill" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#030712" stop-opacity="0.9"/>
-    </linearGradient>
-
     <!-- Neon Glow Filter -->
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="6" result="blur" />
@@ -38,10 +32,55 @@
   </defs>
 
   <style>
+    /* Continuous pulse and dash animation */
+    .shield-stroke {
+      stroke: url(#shieldGrad);
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      filter: url(#softGlow);
+    }
+    .route-path {
+      stroke: url(#routeGrad);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      stroke-dasharray: 600;
+      stroke-dashoffset: 600;
+      animation: drawRoute 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+      filter: url(#glow);
+    }
+    .node-pulse {
+      fill: #38bdf8;
+      animation: pulseNode 2s ease-in-out infinite alternate;
+    }
+    .node-pulse-alt {
+      fill: #a855f7;
+      animation: pulseNode 2s ease-in-out infinite alternate-reverse;
+    }
+    .lock-shackle {
+      stroke: #38bdf8;
+      stroke-width: 10;
+      stroke-linecap: round;
+      fill: none;
+    }
+    .lock-body {
+      stroke: #60a5fa;
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: #0f172a;
+    }
+    .keyhole {
+      fill: #38bdf8;
+    }
+
     @keyframes drawRoute {
       0% {
         stroke-dashoffset: 600;
-        opacity: 0.4;
+        opacity: 0.3;
       }
       50% {
         opacity: 1;
@@ -53,17 +92,13 @@
     }
     @keyframes pulseNode {
       0% {
-        r: 9;
+        r: 8;
+        filter: drop-shadow(0 0 2px #38bdf8);
       }
       100% {
         r: 13;
+        filter: drop-shadow(0 0 12px #38bdf8);
       }
-    }
-    .animated-route {
-      animation: drawRoute 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
-    }
-    .animated-node {
-      animation: pulseNode 2s ease-in-out infinite alternate;
     }
   </style>
 
@@ -71,69 +106,29 @@
   <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
   <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="#1e293b" stroke-width="2"/>
 
-  <!-- Outer Protective Shield with Subtle Fill -->
-  <path d="M 256 80 L 384 136 C 384 276 332 376 256 432 C 180 376 128 276 128 136 Z"
-        fill="url(#shieldFill)"
-        stroke="url(#shieldGrad)"
-        stroke-width="14"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        filter="url(#softGlow)"/>
+  <!-- Minimal Outer Protective Shield Outline -->
+  <path class="shield-stroke" d="M 256 80 L 384 136 C 384 276 332 376 256 432 C 180 376 128 276 128 136 Z"/>
 
-  <!-- Primary Route Traffic Line (Fully drawn final path: lower-left through gate nexus to upper-right) -->
-  <path class="animated-route"
-        d="M 72 370 Q 148 370 196 300 T 256 256 T 316 212 Q 364 142 440 142"
-        fill="none"
-        stroke="url(#routeGrad)"
-        stroke-width="12"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        opacity="1"
-        filter="url(#glow)"/>
+  <!-- Dynamic Animated Route Traffic Line passing through the Shield gate -->
+  <!-- Enters from lower-left, climbs through the gate nexus, exits upper-right -->
+  <path class="route-path" d="M 72 370 Q 148 370 196 300 T 256 256 T 316 212 Q 364 142 440 142"/>
 
-  <!-- Secondary Crossing Protective Route Line (Fully drawn final path) -->
-  <path class="animated-route"
-        d="M 128 170 Q 190 200 256 256 Q 322 312 384 342"
-        fill="none"
-        stroke="url(#routeGrad)"
-        stroke-width="12"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        opacity="0.85"
-        filter="url(#glow)"/>
+  <!-- Secondary crossing protective route line -->
+  <path class="route-path" style="animation-delay: 0.8s; stroke-dasharray: 400; stroke-dashoffset: 400;" d="M 128 170 Q 190 200 256 256 Q 322 312 384 342"/>
 
-  <!-- Route Waypoint Nodes with Glow Halos -->
-  <!-- Lower-Left Node (Cyan) -->
-  <circle cx="72" cy="370" r="18" fill="#38bdf8" opacity="0.25"/>
-  <circle class="animated-node" cx="72" cy="370" r="10" fill="#38bdf8" stroke="#f0f9ff" stroke-width="2"/>
-
-  <!-- Upper-Right Node (Purple) -->
-  <circle cx="440" cy="142" r="18" fill="#a855f7" opacity="0.25"/>
-  <circle class="animated-node" cx="440" cy="142" r="10" fill="#a855f7" stroke="#fdf4ff" stroke-width="2"/>
-
-  <!-- Central Crossing Nexus -->
-  <circle cx="256" cy="256" r="12" fill="#38bdf8" opacity="0.3"/>
-  <circle cx="256" cy="256" r="6" fill="#f8fafc"/>
+  <!-- Route Waypoint Nodes -->
+  <circle class="node-pulse" cx="72" cy="370" r="10"/>
+  <circle class="node-pulse-alt" cx="440" cy="142" r="10"/>
+  <circle cx="256" cy="256" r="6" fill="#f8fafc" filter="url(#glow)"/>
 
   <!-- Central Minimalist Sentinel Lock / Gateway Nexus -->
   <g transform="translate(224, 220)">
     <!-- Shackle -->
-    <path d="M 18 16 V -6 A 14 14 0 0 1 46 -6 V 16"
-          fill="none"
-          stroke="#38bdf8"
-          stroke-width="10"
-          stroke-linecap="round"/>
-
+    <path class="lock-shackle" d="M 18 16 V -6 A 14 14 0 0 1 46 -6 V 16"/>
     <!-- Lock Box -->
-    <rect x="4" y="16" width="56" height="46" rx="12"
-          fill="#0f172a"
-          stroke="#60a5fa"
-          stroke-width="10"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
-
+    <rect class="lock-body" x="4" y="16" width="56" height="46" rx="12"/>
     <!-- Keyhole / Core -->
-    <circle cx="32" cy="34" r="5" fill="#38bdf8"/>
+    <circle class="keyhole" cx="32" cy="34" r="5"/>
     <path d="M 30 36 L 28 50 H 36 L 34 36 Z" fill="#38bdf8"/>
   </g>
 </svg>
