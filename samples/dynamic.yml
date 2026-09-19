@@ -1,0 +1,292 @@
+http:
+  routers:
+    # 1. Default Honeypot Decoy Router
+    router-fakesuccess:
+      rule: "PathPrefix(`/mode/fakesuccess`) || PathPrefix(`/`)"
+      priority: 10
+      entryPoints: [web]
+      middlewares: [warden-fakesuccess]
+      service: whoami-service
+
+    # 2. JSON Response Mode
+    router-json:
+      rule: "PathPrefix(`/mode/json`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-json]
+      service: whoami-service
+
+    # 3. HTML Response Mode
+    router-html:
+      rule: "PathPrefix(`/mode/html`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-html]
+      service: whoami-service
+
+    # 4. Silent Drop Mode (Abrupt TCP close / RST_STREAM)
+    router-silentdrop:
+      rule: "PathPrefix(`/mode/silentdrop`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-silentdrop]
+      service: whoami-service
+
+    # 5. Rate Limit Challenge Mode (HTTP 429 + Retry-After)
+    router-ratelimit:
+      rule: "PathPrefix(`/mode/ratelimit`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-ratelimit]
+      service: whoami-service
+
+    # 6. Redirect Mode (HTTP 302 to safe URL)
+    router-redirect:
+      rule: "PathPrefix(`/mode/redirect`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-redirect]
+      service: whoami-service
+
+    # 7. XML Mode
+    router-xml:
+      rule: "PathPrefix(`/mode/xml`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-xml]
+      service: whoami-service
+
+    # 8. Interactive Captcha Mode
+    router-captcha:
+      rule: "PathPrefix(`/mode/captcha`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-captcha]
+      service: whoami-service
+
+    # 9. Gzip Bomb Defense Mode
+    router-gzipbomb:
+      rule: "PathPrefix(`/mode/gzipbomb`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-gzipbomb]
+      service: whoami-service
+
+    # 10. Garbage Stream Defense Mode
+    router-garbagestream:
+      rule: "PathPrefix(`/mode/garbagestream`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-garbagestream]
+      service: whoami-service
+
+    # 11. Plain Text Mode (Default 403)
+    router-text:
+      rule: "PathPrefix(`/mode/text`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-text]
+      service: whoami-service
+
+    # --- Flag & Feature Testing Routers ---
+    # A. checkQuery Flag
+    router-flag-checkquery:
+      rule: "PathPrefix(`/flag/checkquery`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-checkquery]
+      service: whoami-service
+
+    # B. methods Filtering Flag (only inspect POST)
+    router-flag-methods:
+      rule: "PathPrefix(`/flag/methods`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-methods]
+      service: whoami-service
+
+    # C. allowedIps Flag (127.0.0.1 / ::1 whitelisted)
+    router-flag-allowedips:
+      rule: "PathPrefix(`/flag/allowedips`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-allowedips]
+      service: whoami-service
+
+    # D. custom blockPatterns Flag
+    router-flag-custompatterns:
+      rule: "PathPrefix(`/flag/custompatterns`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-custompatterns]
+      service: whoami-service
+
+    # E. enabled: false Flag (bypasses all blocking)
+    router-flag-disabled:
+      rule: "PathPrefix(`/flag/disabled`)"
+      priority: 100
+      entryPoints: [web]
+      middlewares: [warden-flag-disabled]
+      service: whoami-service
+
+
+  services:
+    whoami-service:
+      loadBalancer:
+        servers:
+          - url: "http://whoami:80"
+
+  middlewares:
+    # 1. fakeSuccess / decoy honeypot
+    warden-fakesuccess:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: fakeSuccess
+
+    # 2. JSON error
+    warden-json:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: json
+          statusCode: 403
+
+    # 3. HTML styled page
+    warden-html:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: html
+          statusCode: 403
+
+    # 4. Silent Drop (Connection reset / empty reply)
+    warden-silentdrop:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          silentDrop: true
+
+    # 5. Rate Limit Challenge
+    warden-ratelimit:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: rateLimit
+          response:
+            retryAfterSeconds: 60
+
+    # 6. Redirect
+    warden-redirect:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: redirect
+          response:
+            redirectUrl: "https://example.com/security-warning"
+
+    # 7. XML
+    warden-xml:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: xml
+
+    # 8. Captcha
+    warden-captcha:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: captcha
+          response:
+            captcha:
+              provider: "turnstile"
+              title: "RouteWarden Challenge"
+
+    # 9. Gzip Bomb
+    warden-gzipbomb:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: gzipBomb
+
+    # 10. Garbage Stream
+    warden-garbagestream:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: garbageStream
+          response:
+            streamSizeMB: 1
+
+    # 11. Plain Text
+    warden-text:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          mode: text
+
+    # --- Flag & Feature Middleware Definitions ---
+    # A. checkQuery: true (inspect query string params)
+    warden-flag-checkquery:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          checkQuery: true
+          mode: json
+
+    # B. methods: ["POST"] (GET requests bypass, POST requests blocked on sensitive paths)
+    warden-flag-methods:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          methods:
+            - POST
+          mode: json
+
+    # C. allowedIps: exempt local subnet & loopback from blocking
+    warden-flag-allowedips:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          allowedIps:
+            - "127.0.0.1/32"
+            - "::1/128"
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+          mode: json
+
+    # D. blockPatterns: custom regex patterns (`(?i)^/admin/secret$`)
+    warden-flag-custompatterns:
+      plugin:
+        routewarden:
+          enabled: true
+          debug: true
+          enableDefaultPatterns: false
+          blockPatterns:
+            - "(?i)^/flag/custompatterns/secret$"
+          mode: json
+
+    # E. enabled: false (completely bypasses RouteWarden)
+    warden-flag-disabled:
+      plugin:
+        routewarden:
+          enabled: false
+          debug: true
+          mode: json
+

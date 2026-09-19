@@ -142,6 +142,9 @@ func NewResponseHandler(respCfg *ResponseConfig, topStatusCode int, topCustomTex
 				respCfg.StatusCode = http.StatusForbidden
 			}
 		}
+		if respCfg.Body == "" && topCustomText != "" && (respCfg.Mode == "" || strings.EqualFold(respCfg.Mode, "text")) {
+			respCfg.Body = topCustomText
+		}
 		if respCfg.Mode == "" {
 			respCfg.Mode = "text"
 		}
@@ -186,6 +189,12 @@ func NewResponseHandler(respCfg *ResponseConfig, topStatusCode int, topCustomTex
 func (h *ResponseHandler) SetProxyHandlerForTest(p http.Handler) {
 	h.proxyHandler = p
 }
+
+// SetCaptchaTemplateForTest allows unit tests to inject custom/faulty captcha templates.
+func (h *ResponseHandler) SetCaptchaTemplateForTest(tmpl *template.Template) {
+	h.captchaTemplate = tmpl
+}
+
 
 // ServeBlockedRequest handles writing the configured response to the client.
 func (h *ResponseHandler) ServeBlockedRequest(w http.ResponseWriter, req *http.Request) {
@@ -477,8 +486,10 @@ func (h *ResponseHandler) ServeBlockedRequest(w http.ResponseWriter, req *http.R
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.WriteHeader(h.config.StatusCode)
-		if h.config.Body != "" {
-			_, _ = fmt.Fprintln(w, h.config.Body)
+		body := h.config.Body
+		if strings.TrimSpace(body) == "" {
+			body = fmt.Sprintf("%d Forbidden: Access to sensitive endpoint is blocked", h.config.StatusCode)
 		}
+		_, _ = fmt.Fprintln(w, body)
 	}
 }

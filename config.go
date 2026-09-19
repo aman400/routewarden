@@ -65,8 +65,11 @@ type Config struct {
 	StatusCode                 int             `json:"statusCode,omitempty"`
 	CustomResponseText         string          `json:"customResponseText,omitempty"`
 	SilentDrop                 bool            `json:"silentDrop,omitempty"`
+	Action                     string          `json:"action,omitempty"`                     // Convenience alias for response mode (e.g. "silentDrop", "fakeSuccess", "json")
+	Mode                       string          `json:"mode,omitempty"`                       // Convenience alias for response mode
 	CheckQuery                 bool            `json:"checkQuery,omitempty"`
 	Debug                      bool            `json:"debug,omitempty"`                      // Enable verbose debug logging to stdout/stderr
+	SecurityLog                bool            `json:"securityLog,omitempty"`                // Emit structured JSON security audit events (CrowdSec/SIEM compatible) on block
 	Response                   *ResponseConfig `json:"response,omitempty"`
 }
 
@@ -84,8 +87,13 @@ func CreateConfig() *Config {
 		StatusCode:                 http.StatusForbidden,
 		CustomResponseText:         "403 Forbidden: Access to sensitive endpoint is blocked",
 		SilentDrop:                 false,
+		Action:                     "",
+		Mode:                       "",
 		CheckQuery:                 false,
 		Debug:                      false,
-		Response:                   nil,
+		SecurityLog:                true,
+		Response: &ResponseConfig{
+			Mode: "text",
+		},
 	}
 }
